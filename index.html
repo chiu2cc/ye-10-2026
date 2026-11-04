@@ -393,6 +393,8 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
 .cages { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .cage { background: #fff; border-radius: 18px; padding: 8px 14px; box-shadow: 0 4px 0 var(--line); display: flex; gap: 8px; align-items: center; font-size: 22px; }
 
+.sync-btn { font-size: 16px; color: var(--ink-soft); padding: 2px 10px; border-radius: 12px; background: #fff; box-shadow: 0 2px 0 var(--line); }
+
 /* ---------- 每日任務 ---------- */
 .missions { width: 100%; background: #fff; border-radius: 24px; padding: 12px 18px; box-shadow: 0 5px 0 var(--line); text-align: left; }
 .missions h3 { margin: 0 0 6px; font-size: 22px; }
@@ -522,31 +524,66 @@ function blankState() {
     words: {}, stars: 0, badges: [], days: [], curUnit: UNITS[0], outbox: [], device: uid(),
     owned: ['bow'], wear: { head: 'bow' }, friends: 0, chests: [], bonusOn: '', lastStars: null,
     bosses: [], coupons: [], msgSeen: '', daily: null, gifts: [],
+    syncLog: [],     // 最近 20 次送資料的結果，跟著進度一起上傳，查「為什麼沒送上來」用
     pending: null,   // 練到一半關掉時的進度，下次打開時補記
   };
 }
 let S = load();
 function load() {
-  try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && s.words) return Object.assign(blankState(), s); } catch (e) {}
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_KEY));
+    if (s && s.words) {
+      (s.outbox || []).forEach(e => { if (!e.eid) e.eid = uid(); });   // 舊版留下、還沒送出的紀錄補編號
+      return Object.assign(blankState(), s);
+    }
+  } catch (e) {}
   return blankState();
 }
 function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {} }
 
 /* ---------- 進度回傳 ---------- */
-function logEvent(ev) { S.outbox.push(Object.assign({ ts: new Date().toISOString() }, ev)); save(); }
-async function flush() {
-  if (!CFG.progressUrl || !S.outbox.length) return;
-  const batch = S.outbox.slice();
+// eid：每筆紀錄的編號，試算表端用來去掉重送的重複紀錄
+function logEvent(ev) { S.outbox.push(Object.assign({ ts: new Date().toISOString(), eid: uid() }, ev)); save(); }
+// 送資料：只有試算表回 {ok:true} 才算送到，才把平板上的紀錄刪掉；沒收到回應一律留著下次再送。
+// （舊版在讀不到回應時改用 no-cors 再送、並假設送到就刪，平板送不出去時紀錄會靜靜消失）
+let flushing = false, retryTimer = null;
+function syncNote(res) {
+  S.syncLog = (S.syncLog || []).concat([{ at: new Date().toISOString(), res, left: S.outbox.length }]).slice(-20);
+  save();
+}
+async function flush(force) {
+  if (!CFG.progressUrl || flushing) return;
+  if (!S.outbox.length && !force) return;
+  flushing = true;
+  const batch = S.outbox.slice(0, 400);   // 一次最多 400 筆，太多就分批
   const snapshot = Object.assign({}, S, { outbox: [] });
-  const body = JSON.stringify({ key: CFG.key, device: S.device, events: batch, state: snapshot });
-  let sent = false;
+  const body = JSON.stringify({ key: CFG.key, device: S.device, events: batch, state: snapshot, left: S.outbox.length });
+  let res, ok = false;
   try {
     const r = await fetch(CFG.progressUrl, { method: 'POST', body });
-    sent = r.ok;
+    const txt = await r.text();
+    let j = null; try { j = JSON.parse(txt); } catch (e) {}
+    if (j && j.ok) {
+      ok = true;
+      const sent = new Set(batch.map(e => e.eid));
+      S.outbox = S.outbox.filter(e => !sent.has(e.eid));
+      res = `ok ${batch.length}${j.dup ? ` (dup ${j.dup})` : ''}`;
+    } else res = `bad ${r.status} ${j ? (j.error || '') : txt.replace(/\s+/g, ' ').slice(0, 120)}`;
   } catch (e) {
-    try { await fetch(CFG.progressUrl, { method: 'POST', body, mode: 'no-cors' }); sent = true; } catch (e2) {}
+    res = 'net ' + String((e && e.message) || e).slice(0, 120);
   }
-  if (sent) { S.outbox = S.outbox.slice(batch.length); save(); }
+  flushing = false;
+  syncNote(res);
+  if (ok && S.outbox.length) return flush();                 // 還有下一批
+  clearTimeout(retryTimer);
+  if (!ok && S.outbox.length) retryTimer = setTimeout(flush, 60000);   // 沒送到：開著網頁就每分鐘再試
+  if (document.getElementById('sync')) document.getElementById('sync').innerHTML = syncLabel();
+}
+function syncLabel() {
+  const last = (S.syncLog || []).slice(-1)[0];
+  if (!CFG.progressUrl) return '☁️ 沒有設定雲端';
+  if (S.outbox.length) return `☁️ 還有 ${S.outbox.length} 筆沒送出`;
+  return last && last.res.startsWith('ok') ? '☁️ 已同步' : '☁️ 還沒同步過';
 }
 async function restoreIfEmpty() {
   if (!CFG.progressUrl || Object.keys(S.words).length) return;
@@ -2019,7 +2056,8 @@ function home() {
       ${REMOTE.message ? `<button class="btn soft small" id="letter"><span class="emo">💌</span> 媽媽的信</button>` : ''}
       <button class="btn soft small" id="book"><span class="emo">📒</span> 貼紙簿 ${S.badges.length}/${UNITS.length}</button>
     </div>
-    <div class="meta-row"><span><i class="emo">⭐</i> 星星 ${S.stars}</span><span><i class="emo">📅</i> 練習了 ${S.days.length} 天</span><span><i class="emo">📚</i> 學過 ${Object.keys(S.words).length} / ${W.length} 個字</span></div>
+    <div class="meta-row"><span><i class="emo">⭐</i> 星星 ${S.stars}</span><span><i class="emo">📅</i> 練習了 ${S.days.length} 天</span><span><i class="emo">📚</i> 學過 ${Object.keys(S.words).length} / ${W.length} 個字</span>
+      <button class="sync-btn" id="sync">${syncLabel()}</button></div>
     ${srOff ? '<div class="heard">這台裝置不能用語音辨識，說話練習會改成「跟著唸」。</div>' : ''}
   </section>`);
   $app.appendChild(card);
@@ -2031,6 +2069,7 @@ function home() {
   card.querySelector('#isle').onclick = () => { sfx.tap(); islandView(); };
   card.querySelector('#dex').onclick = () => { sfx.tap(); dexFilter = 'all'; dexView(); };
   card.querySelector('#coupon').onclick = () => { sfx.tap(); couponView(); };
+  card.querySelector('#sync').onclick = () => { sfx.tap(); syncView(); };
   const lt = card.querySelector('#letter');
   if (lt) lt.onclick = () => { sfx.tap(); showLetter(); };
   const ch = card.querySelector('#chest');
@@ -2253,6 +2292,38 @@ function showLetter(isNew) {
   };
 }
 
+// 同步狀態（給大人看）：還有幾筆沒送、最近每次送資料的結果
+function syncView() {
+  $app.innerHTML = '';
+  $app.appendChild(backBar('同步狀態'));
+  const fmt = s => { const d = new Date(s); const z = n => String(n).padStart(2, '0'); return `${d.getMonth() + 1}/${d.getDate()} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+  const why = r => r.startsWith('ok') ? '送到了' : r.startsWith('net') ? '連不上（網路被擋或沒網路）' : '試算表回覆有問題';
+  const log = (S.syncLog || []).slice().reverse();
+  let host = ''; try { host = new URL(CFG.progressUrl).host; } catch (e) {}
+  const card = h(`<section class="card" style="text-align:left;align-items:stretch">
+    <div class="pill" style="align-self:center">${syncLabel()}</div>
+    <div class="heard">這台裝置：<span class="en">${esc(S.device)}</span>　送到：<span class="en">${esc(host || '（沒有設定）')}</span><br>
+      進度：練習 ${S.days.length} 天、學過 ${Object.keys(S.words).length} 個字</div>
+    <div class="row"><button class="btn mint small" id="send">再送一次</button><button class="btn soft small" id="test">測試連線</button></div>
+    <div class="heard" id="out"></div>
+    <div class="missions"><h3>最近 ${log.length} 次送資料</h3>
+      ${log.length ? log.map(x => `<div class="mis"><span class="en" style="min-width:96px">${fmt(x.at)}</span><span>${why(x.res)}</span>
+        <span class="cnt" style="flex:1;text-align:left;font-size:14px;color:var(--ink-soft)">${esc(x.res)}</span></div>`).join('') : '<div class="mis">還沒有送過</div>'}
+    </div>
+  </section>`);
+  const out = card.querySelector('#out');
+  card.querySelector('#send').onclick = async () => { sfx.tap(); out.textContent = '送出中……'; await flush(true); syncView(); };
+  card.querySelector('#test').onclick = async () => {
+    sfx.tap(); out.textContent = '測試中……';
+    try {
+      const r = await fetch(`${CFG.progressUrl}?action=hello&key=${encodeURIComponent(CFG.key)}`);
+      const t = await r.text();
+      out.textContent = `讀取：HTTP ${r.status}　${t.slice(0, 80)}`;
+    } catch (e) { out.textContent = '讀取失敗：' + String((e && e.message) || e); }
+  };
+  $app.appendChild(card);
+}
+
 function rescueView() {
   $app.innerHTML = '';
   $app.appendChild(backBar('救援站'));
@@ -2309,6 +2380,7 @@ restoreIfEmpty().then(() => {
   // 上次練到一半就關掉：先把那次學過的字補記起來
   if (S.pending) { const p = S.pending; S.pending = null; settle(p); save(); }
   home();
+  flush(true);   // 一打開就把整份進度送一次（就算沒有新紀錄），平板上的進度才救得回來
   // 兌換券和媽媽的信放在試算表；先用上次存的畫首頁，抓到新的信再重畫
   const before = REMOTE.message;
   loadRemote().then(() => {
