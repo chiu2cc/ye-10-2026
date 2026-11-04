@@ -393,6 +393,71 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
 .cages { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .cage { background: #fff; border-radius: 18px; padding: 8px 14px; box-shadow: 0 4px 0 var(--line); display: flex; gap: 8px; align-items: center; font-size: 22px; }
 
+/* ---------- 每日任務 ---------- */
+.missions { width: 100%; background: #fff; border-radius: 24px; padding: 12px 18px; box-shadow: 0 5px 0 var(--line); text-align: left; }
+.missions h3 { margin: 0 0 6px; font-size: 22px; }
+.mis { display: flex; align-items: center; gap: 10px; font-size: 19px; padding: 4px 0; }
+.mis .bar { flex: 1; height: 12px; border-radius: 6px; background: var(--cream); overflow: hidden; }
+.mis .bar i { display: block; height: 100%; background: var(--mint); border-radius: 6px; }
+.mis .cnt { font-family: var(--font-en); font-size: 18px; min-width: 42px; text-align: right; }
+.mis.done { color: var(--mint-deep); }
+
+/* ---------- 單字圖鑑 ---------- */
+.dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 10px; width: 100%; }
+.dexcard {
+  border-radius: 18px; background: #fff; box-shadow: 0 4px 0 var(--line), inset 0 0 0 3px var(--line);
+  padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.dexcard .emo { font-size: 36px; line-height: 1.15; }
+.dexcard b { font-family: var(--font-en); font-weight: 600; font-size: 19px; overflow-wrap: anywhere; }
+.dexcard span { font-size: 15px; color: var(--ink-soft); }
+.dexcard.gold { background: linear-gradient(160deg, #FFF3C4, #FFE07A); box-shadow: 0 4px 0 var(--butter-deep), inset 0 0 0 3px #F5C842; }
+
+/* ---------- 媽媽兌換券、媽媽的信 ---------- */
+.coupons { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; width: 100%; }
+.coupon {
+  position: relative; border-radius: 22px; padding: 14px 16px; background: #FFF6D8;
+  border: 3px dashed var(--butter-deep); display: flex; align-items: center; gap: 12px; text-align: left;
+}
+.coupon .emo { font-size: 44px; }
+.coupon b { display: block; font-size: 21px; }
+.coupon .price { font-family: var(--font-en); font-size: 18px; color: var(--cocoa); }
+.coupon.short { opacity: .55; }
+.ticket { background: #FFF6D8; border: 4px dashed var(--butter-deep); border-radius: 26px; padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ticket .emo { font-size: 80px; line-height: 1; }
+.ticket h2 { margin: 0; font-size: 30px; }
+.letter { background: #FFFDF6; border-radius: 18px; padding: 18px 20px; box-shadow: inset 0 0 0 3px #F5D9C8; font-size: 24px; line-height: 1.7; text-align: left; white-space: pre-wrap; width: 100%; }
+.envelope { font-family: var(--font-emoji); font-size: 120px; line-height: 1; cursor: pointer; animation: chest-bob 1.2s ease-in-out infinite; }
+
+/* ---------- 魔王關 ---------- */
+.boss svg { width: 170px; height: 170px; overflow: visible; }
+.boss.hit svg { animation: boss-hit .45s; }
+@keyframes boss-hit { 20% { transform: translateX(-10px) scale(.92); filter: brightness(1.6); } 60% { transform: translateX(8px) scale(1.04); } }
+.boss.float svg { animation: boss-float 2s ease-in-out infinite; }
+@keyframes boss-float { 50% { transform: translateY(-8px); } }
+.hp { font-family: var(--font-emoji); font-size: 28px; letter-spacing: 3px; }
+.boss-line { font-size: 18px; color: var(--ink-soft); text-align: center; }
+.node.locked { opacity: .45; }
+.tag.gold { background: var(--butter); color: var(--ink); }
+
+/* ---------- 大師拼字：自己打字 ---------- */
+.kb { display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; }
+.kb-row { display: flex; gap: 6px; justify-content: center; }
+.key {
+  width: min(8.6vw, 58px); height: 58px; border-radius: 14px; background: #fff; box-shadow: 0 4px 0 var(--line), inset 0 0 0 2px var(--line);
+  font-family: var(--font-en); font-weight: 600; font-size: 26px;
+}
+.key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+
+/* ---------- 小島：跟小羊說話、下雪 ---------- */
+.island-box.talkable { position: relative; }
+.lamb-hit { position: absolute; left: 38%; top: 36%; width: 24%; height: 38%; border-radius: 50%; }
+.talk { max-width: 600px; text-align: center; }
+.talk .en { display: block; font-size: 26px; font-weight: 600; color: var(--ink); }
+.talk::before { display: none; }
+.flake { animation: fall linear infinite; }
+@keyframes fall { from { transform: translateY(-30px); } to { transform: translateY(290px); } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -442,6 +507,7 @@ function blankState() {
   return {
     words: {}, stars: 0, badges: [], days: [], curUnit: UNITS[0], outbox: [], device: uid(),
     owned: ['bow'], wear: { head: 'bow' }, friends: 0, chests: [], bonusOn: '', lastStars: null,
+    bosses: [], coupons: [], msgSeen: '', daily: null, gifts: [],
     pending: null,   // 練到一半關掉時的進度，下次打開時補記
   };
 }
@@ -682,6 +748,10 @@ function islandSvg(days = S.days.length, friends = S.friends || 0) {
   const grass = days >= 1;
   const things = ISLAND.filter(x => x[0] <= days).sort((a, b) => a[4] - b[4]);
   const pets = FRIENDS.slice(0, Math.min(friends, FRIENDS.length)).map((e, i) => emoT(e, FRIEND_POS[i][0], FRIEND_POS[i][1], 22)).join('');
+  const se = season();
+  const deco = se ? se.deco.map(([e, x, y, s]) => emoT(e, x, y, s)).join('') : '';
+  const snow = se && se.snow ? Array.from({ length: 26 }, (_, i) =>
+    `<circle class="flake" cx="${(i * 37 + 11) % 400}" cy="0" r="${2 + (i % 3)}" fill="#fff" opacity=".9" style="animation-duration:${5 + (i % 5)}s;animation-delay:-${(i * 0.7) % 6}s"/>`).join('') : '';
   return `<svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMax slice" role="img" aria-label="陽寶的小島">
     <defs><linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE9DC"/><stop offset="1" stop-color="#E3F6FB"/></linearGradient></defs>
     <rect width="400" height="150" fill="url(#skyg)"/>
@@ -692,8 +762,10 @@ function islandSvg(days = S.days.length, friends = S.friends || 0) {
     <ellipse cx="200" cy="186" rx="174" ry="58" fill="#F7E4CF" stroke="#EBCDAE" stroke-width="3"/>
     ${grass ? '<ellipse cx="200" cy="176" rx="152" ry="44" fill="#BFE8A6" stroke="#9FD68A" stroke-width="3"/>' : ''}
     ${things.map(x => emoT(x[1], x[3], x[4], x[5])).join('')}
+    ${deco}
     ${lamb('smile').replace('<svg ', '<svg x="158" y="102" width="84" height="84" ')}
     ${pets}
+    ${snow}
   </svg>`;
 }
 function nextGrow() { return ISLAND.find(x => x[0] > S.days.length) || null; }
@@ -710,6 +782,168 @@ function rescueList() {
   const need = r => (r.miss || 0) - (r.rescued || 0);
   return Object.entries(S.words).filter(([id, r]) => BY_ID[id] && need(r) > 0)
     .sort((a, b) => need(b[1]) - need(a[1])).map(([id]) => id);
+}
+function banner(html, ms = 3200) {
+  const b = h(`<div class="banner">${html}</div>`);
+  document.body.appendChild(b); setTimeout(() => b.remove(), ms);
+}
+function refreshStars() { document.querySelectorAll('.star-count b').forEach(c => { c.textContent = S.stars; }); }
+
+/* ---------- 節日主題：聖誕節、過年（網址加 #xmas 或 #cny 可以試看） ---------- */
+const CNY_DAYS = ['2027-02-06', '2028-01-26', '2029-02-13', '2030-02-03'];   // 春節（初一）
+const SEASONS = {
+  xmas: {
+    greet: 'Merry Christmas!', snow: true,
+    deco: [['🎄', 70, 150, 50], ['⛄', 334, 208, 30], ['🎁', 238, 204, 22], ['🎁', 164, 210, 20], ['🔔', 140, 112, 22]],
+    talk: [['Merry Christmas!', '聖誕快樂！'], ['Look! It is snowing!', '你看！下雪了！'], ['I want a big present!', '我想要一個大禮物！']],
+  },
+  cny: {
+    greet: '新年快樂！', snow: false,
+    deco: [['🏮', 122, 108, 28], ['🏮', 292, 100, 28], ['🧧', 238, 206, 22], ['🧨', 164, 210, 22], ['🎆', 76, 44, 40], ['🎇', 340, 36, 36]],
+    talk: [['Happy Lunar New Year!', '新年快樂！'], ['Can I have a red envelope?', '可以給我紅包嗎？'], ['Fireworks are so pretty!', '煙火好漂亮！']],
+  },
+};
+function season(d = new Date()) {
+  const f = location.hash.slice(1);
+  if (SEASONS[f]) return Object.assign({ key: f }, SEASONS[f]);
+  const md = (d.getMonth() + 1) * 100 + d.getDate();
+  if (md >= 1201 && md <= 1226) return Object.assign({ key: 'xmas' }, SEASONS.xmas);
+  const t = d.getTime();
+  for (const s of CNY_DAYS) {
+    const c = new Date(s + 'T00:00:00').getTime();
+    if (t >= c - 7 * 86400000 && t < c + 15 * 86400000) return Object.assign({ key: 'cny', day: s }, SEASONS.cny);
+  }
+  return null;
+}
+// 節日禮物：聖誕節（12/24、12/25）送超稀有寶箱，春節當天送 88 顆星紅包，每年各一次
+function seasonGift() {
+  const se = season(), t = today(), y = t.slice(0, 4);
+  if (!se || location.hash) return;
+  if (se.key === 'xmas' && (t.endsWith('-12-24') || t.endsWith('-12-25')) && !S.gifts.includes('xmas-' + y)) {
+    S.gifts.push('xmas-' + y); S.chests.push('super'); save();
+    logEvent({ type: 'gift', got: 'xmas-' + y });
+    banner('🎄 聖誕老公公送來一個超稀有寶箱！', 4500);
+  }
+  if (se.key === 'cny' && t === se.day && !S.gifts.includes('cny-' + y)) {
+    S.gifts.push('cny-' + y); S.stars += 88; save();
+    logEvent({ type: 'gift', got: 'cny-' + y });
+    banner('🧧 新年紅包：88 顆星星！', 4500);
+  }
+}
+
+/* ---------- 小島上點小羊，牠會講一句英文 ---------- */
+const LAMB_TALK = [
+  ['Hello! Nice to see you!', '哈囉！很高興見到你！'],
+  ["I'm hungry. Let's eat some grass!", '我肚子餓了，來吃點草吧！'],
+  ['You are my best friend.', '你是我最好的朋友。'],
+  ["Let's learn English together!", '我們一起學英文吧！'],
+  ['Look! A butterfly!', '你看！有蝴蝶！'],
+  ["It's a sunny day.", '今天是晴天。'],
+  ['Can you spell "sheep"?', '你會拼 sheep 嗎？'],
+  ['I love my island.', '我愛我的小島。'],
+  ['Baa baa! That means hi!', '咩咩！意思是「嗨」！'],
+  ['Practice makes perfect.', '熟能生巧。'],
+  ['Do you want to play a game?', '你想玩遊戲嗎？'],
+  ['I am a little lamb.', '我是一隻小羊。'],
+  ['What a beautiful day!', '今天天氣真好！'],
+  ['Tiger Mom is watching us!', '老虎媽媽在看我們喔！'],
+];
+function lambLines() {
+  const hr = new Date().getHours(), out = LAMB_TALK.slice();
+  out.push(hr < 11 ? ['Good morning!', '早安！'] : hr < 18 ? ['Good afternoon!', '午安！'] : ['Good evening!', '晚安！']);
+  if (S.friends) out.push(['Thank you for saving my friends!', '謝謝你救了我的朋友！']);
+  if (S.days.includes(today())) out.push(['You did a great job today!', '你今天表現得很棒！']);
+  const se = season(); if (se) out.push(...se.talk, ...se.talk);
+  return out;
+}
+
+/* ---------- 每日任務：每天抽 3 個，完成一個 +5 星，全部完成再 +10 星 ---------- */
+const MISSIONS = {
+  sayWord: ['唸對 5 個單字', 5, '🎤'],
+  saySent: ['說對 2 個句子', 2, '🗣️'],
+  spell: ['拼字一次答對 4 個', 4, '🔤'],
+  first: ['一次答對 12 題', 12, '🎯'],
+  order: ['排對 2 個句子', 2, '🧩'],
+  rescue: ['救出 1 隻小動物', 1, '🚑'],
+  bonus: ['玩一次獎勵關', 1, '🏃'],
+};
+function dailyMissions() {
+  const t = today();
+  if (!S.daily || S.daily.date !== t) {
+    const keys = Object.keys(MISSIONS).filter(k => k !== 'rescue' || rescueList().length);
+    S.daily = { date: t, list: shuffle(keys).slice(0, 3).map(k => ({ k, n: 0 })), all: false };
+    save();
+  }
+  return S.daily;
+}
+function mission(k, n = 1) {
+  const d = dailyMissions();
+  for (const m of d.list) {
+    const goal = MISSIONS[m.k][1];
+    if (m.k !== k || m.n >= goal) continue;
+    m.n = Math.min(goal, m.n + n);
+    if (m.n >= goal) { S.stars += 5; banner(`<span class="emo">${MISSIONS[k][2]}</span> 任務完成：${MISSIONS[k][0]}！+5 <span class="emo">⭐</span>`); logEvent({ type: 'mission', got: k }); }
+  }
+  if (!d.all && d.list.every(m => m.n >= MISSIONS[m.k][1])) {
+    d.all = true; S.stars += 10;
+    setTimeout(() => banner('今天的任務全部完成！再送 10 <span class="emo">⭐</span>', 3600), 1500);
+  }
+  save(); refreshStars();
+}
+function missionsHtml() {
+  const d = dailyMissions();
+  return `<div class="missions"><h3><span class="emo">📋</span> 今日任務${d.all ? ' <span class="emo">🎉</span>' : ''}</h3>
+    ${d.list.map(m => { const [name, goal, e] = MISSIONS[m.k]; return `<div class="mis ${m.n >= goal ? 'done' : ''}"><span class="emo">${m.n >= goal ? '✅' : e}</span><span>${name}</span>
+      <span class="bar"><i style="width:${m.n / goal * 100}%"></i></span><span class="cnt">${m.n}/${goal}</span></div>`; }).join('')}</div>`;
+}
+
+/* ---------- 魔王：每座島 10 關學完，魔王「貪吃雲」出現，打贏才能去下一座島 ---------- */
+const BOSS_HP = 8;
+const BOSS_TINT = ['#FFB3C4', '#C9B6F2', '#B8C4D6', '#9FD8E8', '#A8D89A', '#F5C08A', '#BFE6F5', '#D6C9F0', '#FFE08A', '#F7B2D9'];
+const isleOf = u => Math.floor(UNITS.indexOf(u) / 10);
+const isleUnits = g => UNITS.slice(g * 10, g * 10 + 10);
+const isleDone = g => isleUnits(g).every(u => unitLeft(u).length === 0);
+const isleOpen = g => g === 0 || S.bosses.includes(g - 1);
+function pendingBoss() { for (let g = 0; g * 10 < UNITS.length; g++) if (isleDone(g) && !S.bosses.includes(g)) return g; return null; }
+function bossSvg(g, mood = 'mad') {
+  const c = BOSS_TINT[g % BOSS_TINT.length];
+  const puffs = [[60, 66, 34], [32, 74, 24], [88, 74, 24], [44, 48, 22], [76, 46, 24], [60, 88, 26], [22, 58, 16], [98, 58, 16]];
+  const body = puffs.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="#6B5B8C" stroke-width="4"/>`).join('')
+    + puffs.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`).join('');
+  const face = mood === 'mad'
+    ? `<path d="M36 52 l18 7" stroke="#3E2A22" stroke-width="5" stroke-linecap="round"/><path d="M84 52 l-18 7" stroke="#3E2A22" stroke-width="5" stroke-linecap="round"/>
+       <circle cx="46" cy="66" r="6" fill="#3E2A22"/><circle cx="74" cy="66" r="6" fill="#3E2A22"/><circle cx="47.5" cy="64.5" r="2" fill="#fff"/><circle cx="75.5" cy="64.5" r="2" fill="#fff"/>
+       <path d="M42 82 q18 24 36 0 z" fill="#6B2140" stroke="#3E2A22" stroke-width="2.5" stroke-linejoin="round"/>
+       <path d="M47 82 l4 7 l4 -7z M65 82 l4 7 l4 -7z" fill="#fff" stroke="#3E2A22" stroke-width="1.2"/>
+       <text x="98" y="96" font-family="Fredoka, sans-serif" font-weight="700" font-size="16" fill="#6B5B8C" transform="rotate(14 98 96)">A</text>
+       <text x="12" y="100" font-family="Fredoka, sans-serif" font-weight="700" font-size="14" fill="#6B5B8C" transform="rotate(-12 12 100)">b</text>
+       <text x="104" y="40" font-family="Fredoka, sans-serif" font-weight="700" font-size="13" fill="#6B5B8C">c</text>`
+    : `<path d="M38 66 q8 -9 16 0" stroke="#3E2A22" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M66 66 q8 -9 16 0" stroke="#3E2A22" stroke-width="4" fill="none" stroke-linecap="round"/>
+       <ellipse cx="34" cy="78" rx="7" ry="4.5" fill="#FF8FAB" opacity=".75"/><ellipse cx="86" cy="78" rx="7" ry="4.5" fill="#FF8FAB" opacity=".75"/>
+       <path d="M50 80 q10 10 20 0" stroke="#3E2A22" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  return `<svg viewBox="0 0 120 120" role="img" aria-label="貪吃雲">${body}${face}</svg>`;
+}
+
+/* ---------- 媽媽兌換券、媽媽的信（內容放在試算表，這裡是沒連上時的預設） ---------- */
+const DEFAULT_COUPONS = [
+  { name: '多玩 30 分鐘平板', stars: 100, e: '📱' },
+  { name: '週末吃冰淇淋', stars: 150, e: '🍦' },
+  { name: '今晚不用洗碗', stars: 200, e: '🍽️' },
+  { name: '週末選一部電影', stars: 250, e: '🎬' },
+];
+let REMOTE = { coupons: null, message: '' };
+try { Object.assign(REMOTE, JSON.parse(localStorage.getItem(LS_KEY + '-cfg')) || {}); } catch (e) {}
+const coupons = () => (REMOTE.coupons && REMOTE.coupons.length ? REMOTE.coupons : DEFAULT_COUPONS);
+async function loadRemote() {
+  if (!CFG.progressUrl) return;
+  try {
+    const r = await fetch(`${CFG.progressUrl}?action=config&key=${encodeURIComponent(CFG.key)}`);
+    const j = await r.json();
+    if (j && j.ok && ('coupons' in j || 'message' in j)) {
+      REMOTE = { coupons: j.coupons || null, message: String(j.message || '').trim() };
+      try { localStorage.setItem(LS_KEY + '-cfg', JSON.stringify(REMOTE)); } catch (e) {}
+    }
+  } catch (e) {}
 }
 
 /* ---------- 老虎媽媽 ----------
@@ -865,9 +1099,10 @@ function dueList() {
 }
 function unitWords(u) { return W.filter(x => x.u === u); }
 function unitLeft(u) { return unitWords(u).filter(x => !S.words[x.id]); }
+// 還沒打贏上一座島魔王的島，關卡不開
 function nextUnit(from) {
-  const i = UNITS.indexOf(from);
-  for (let k = 0; k < UNITS.length; k++) { const u = UNITS[(i + k) % UNITS.length]; if (unitLeft(u).length) return u; }
+  const i = Math.max(0, UNITS.indexOf(from));
+  for (let k = 0; k < UNITS.length; k++) { const u = UNITS[(i + k) % UNITS.length]; if (unitLeft(u).length && isleOpen(isleOf(u))) return u; }
   return null;
 }
 function nextNewBatch() {
@@ -918,7 +1153,16 @@ function startSession(mode = 'normal') {
 
 function addNewBatch() {
   const batch = nextNewBatch();
-  if (!batch.length) { ses.queue.push({ t: 'note', text: '全部的字都學過了！我們來多複習幾個吧～', mood: 'cheer' }); return false; }
+  if (!batch.length) {
+    const g = pendingBoss();
+    if (g != null && !ses.bossQueued) {
+      ses.bossQueued = true;
+      ses.queue.push({ t: 'note', text: `<b>${ISLES[g % ISLES.length][1]}</b>的魔王「貪吃雲」出現了！<br>牠把字都吃掉了，打贏牠才能去下一座島！`, mood: 'wow' }, { t: 'boss', g }, { t: 'more' });
+      return true;
+    }
+    ses.queue.push({ t: 'note', text: '全部的字都學過了！我們來多複習幾個吧～', mood: 'cheer' });
+    return false;
+  }
   for (const w of batch) { ses.res[w.id] = { first: true, review: false }; ses.newIds.push(w.id); }
   const u = batch[0].u;
   ses.queue.push({ t: 'note', text: `新單元 <b class="en">NCL4-${u}</b>：認識 <b>${batch.length}</b> 個新朋友！`, mood: 'cheer' });
@@ -973,6 +1217,7 @@ function gainStar(n = 1) {
 function answerLog(step, ok, tries, extra = {}) {
   if (ses.res[step.w.id]) ses.res[step.w.id].quizzed = true;
   ses.doneQ++; keep();
+  if (ok) mission('first');
   logEvent(Object.assign({ type: 'answer', sid: ses.sid, id: step.w.id, w: step.w.w, u: step.w.u, task: step.t, first: ok, tries }, extra));
 }
 
@@ -997,7 +1242,10 @@ function next() {
     if (!addNewBatch()) { ses.allDone = true; return finish(); }
     return next();
   }
-  ({ note: viewNote, intro: viewIntro, meaning: viewMeaning, listen: viewListen, spell: viewSpell, sentMean: viewSentMean, order: viewOrder, saySent: viewSaySent }[step.t])(step);
+  // 複習到很熟（第 4 盒以上）的字，拼字改成大師級：沒有字母磚，自己打
+  const master = step.t === 'spell' && ses.mode !== 'rescue' && S.words[step.w.id] && S.words[step.w.id].box >= 4;
+  ({ note: viewNote, intro: viewIntro, meaning: viewMeaning, listen: viewListen, spell: master ? viewSpellMaster : viewSpell,
+    sentMean: viewSentMean, order: viewOrder, saySent: viewSaySent, boss: viewBoss }[step.t])(step);
 }
 
 /* ---------- 版面骨架 ---------- */
@@ -1080,11 +1328,16 @@ function speakBlock() {
 }
 function wireSpeak(card, step, target, kind) {
   const mic = card.querySelector('#mic'), heard = card.querySelector('#heard'), st = card.querySelector('#sstars');
-  let tries = 0, best = 0;
+  let tries = 0, best = 0, passed = false;
   if (srOff) {
     mic.innerHTML = '<span class="emo">🙋</span>';
     mic.setAttribute('aria-label', '我唸好了');
-    mic.onclick = () => { sfx.yay(); burstAt(mic); heard.textContent = '好勇敢！唸出來就是最棒的！'; logEvent({ type: 'speak', sid: ses.sid, id: step.w.id, w: step.w.w, kind, mode: 'self' }); };
+    let said = false;
+    mic.onclick = () => {
+      sfx.yay(); burstAt(mic); heard.textContent = '好勇敢！唸出來就是最棒的！';
+      logEvent({ type: 'speak', sid: ses.sid, id: step.w.id, w: step.w.w, kind, mode: 'self' });
+      if (!said) { said = true; mission(kind === 'word' ? 'sayWord' : 'saySent'); }
+    };
     return;
   }
   mic.onclick = async () => {
@@ -1109,6 +1362,7 @@ function wireSpeak(card, step, target, kind) {
       sfx.yay(); burstAt(mic, ['🎉', '⭐', '💖', '🎶']);
       heard.innerHTML += '<br><b>唸得好棒！</b>';
       if (tries === 1) gainStar();
+      if (!passed) { passed = true; mission(kind === 'word' ? 'sayWord' : 'saySent'); }
     } else if (tries >= 3) {
       sfx.soft();
       heard.innerHTML += '<br><b>好棒，你很努力！我們下次再挑戰～</b>';
@@ -1251,7 +1505,7 @@ function viewSpell(step) {
     if (got === word) {
       done = true; sfx.yay(); burstAt(slots[Math.floor(L / 2)]);
       msg.innerHTML = `<b>${pick(CHEERS)}</b>`;
-      if (tries === 1) gainStar(); else markMiss(w);
+      if (tries === 1) { gainStar(); mission('spell'); } else markMiss(w);
       answerLog(step, tries === 1, tries, { got });
       say(w.w); nextBtn(card);
       return;
@@ -1307,6 +1561,7 @@ function viewOrder(step) {
       done = true; sfx.yay(); burstAt(line);
       msg.innerHTML = `<b>${pick(CHEERS)}</b>`;
       if (tries === 1) gainStar(); else markMiss(w);
+      mission('order');
       answerLog(step, tries === 1, tries);
       say(w.s); nextBtn(card); return;
     }
@@ -1345,6 +1600,123 @@ function viewSaySent(step) {
   say(w.s);
 }
 
+// 大師級拼字：只有鍵盤，提示規則跟字母磚一樣（第 1 次錯放好第一個字母、第 2 次放好一半、第 3 次公布）
+function viewSpellMaster(step) {
+  const w = step.w, word = w.w.toLowerCase(), L = word.length;
+  const rows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+  const card = frame(`
+    <div class="prompt"><span class="tag gold">大師級</span> 沒有字母磚，自己打出來！</div>
+    <div class="emoji-big">${w.e}</div>
+    <div class="gloss">${esc(w.g)}</div>
+    <div class="row">
+      <button class="icon-btn" id="sp" aria-label="聽發音"><span class="emo">🔊</span></button>
+      <button class="icon-btn" id="slow" aria-label="慢慢唸"><span class="emo">🐢</span></button>
+    </div>
+    <div class="slots">${word.split('').map(() => '<div class="slot"></div>').join('')}</div>
+    <div class="kb">${rows.map(r => `<div class="kb-row">${r.split('').map(c => `<button class="key" data-c="${c}">${c}</button>`).join('')}</div>`).join('')}
+      <div class="kb-row"><button class="btn soft small" id="bs">⌫ 退一格</button></div></div>
+    <div class="heard" id="msg"></div>
+  `);
+  const slots = [...card.querySelectorAll('.slot')], msg = card.querySelector('#msg');
+  let typed = [], locked = 0, tries = 0, done = false;
+  card.querySelector('#sp').onclick = () => say(w.w);
+  card.querySelector('#slow').onclick = () => say(w.w, true);
+  const render = () => slots.forEach((s, k) => {
+    s.textContent = typed[k] || '';
+    s.classList.toggle('filled', k < typed.length && k >= locked);
+    s.classList.toggle('locked', k < locked);
+  });
+  card.querySelectorAll('.key').forEach(b => b.onclick = () => {
+    if (done || typed.length >= L) return;
+    sfx.tap(); typed.push(b.dataset.c); render();
+    if (typed.length === L) check();
+  });
+  card.querySelector('#bs').onclick = () => { if (done || typed.length <= locked) return; typed.pop(); render(); };
+  function lock(n) { locked = n; typed = word.slice(0, n).split(''); render(); }
+  function check() {
+    const got = typed.join('');
+    tries++;
+    if (got === word) {
+      done = true; sfx.yay(); burstAt(slots[Math.floor(L / 2)], ['👑', '⭐', '🌟', '✨']);
+      msg.innerHTML = `<b>大師級！${pick(CHEERS)}</b>`;
+      if (tries === 1) { gainStar(2); mission('spell'); } else markMiss(w);
+      answerLog(step, tries === 1, tries, { got, kind: 'master' });
+      say(w.w); nextBtn(card);
+      return;
+    }
+    sfx.soft(); wiggle(card.querySelector('.slots'));
+    logEvent({ type: 'spellTry', sid: ses.sid, id: w.id, w: w.w, got, kind: 'master' });
+    if (tries === 1) { msg.textContent = '差一點點！小羊幫你放好第一個字母～'; setTimeout(() => lock(1), 450); }
+    else if (tries === 2) { msg.textContent = '再幫你放好一半，加油！'; setTimeout(() => lock(Math.max(2, Math.ceil(L / 2))), 450); }
+    else {
+      done = true; markMiss(w);
+      setTimeout(() => { lock(L); msg.innerHTML = '<b>我們一起記住它！</b>念一遍：<span class="en">' + esc(w.w) + '</span>'; say(w.w, true); }, 450);
+      answerLog(step, false, tries, { got, kind: 'master' });
+      nextBtn(card);
+    }
+  }
+  setTimeout(() => say(w.w), 300);
+}
+
+// 魔王關：用這座島的字出 8 題（選意思、聽音選字輪流），答對就打掉一顆心；沒有失敗
+function viewBoss(step) {
+  const g = step.g, name = ISLES[g % ISLES.length][1], us = isleUnits(g);
+  const pool = shuffle(W.filter(w => us.includes(w.u)));
+  let hp = BOSS_HP, k = 0, firsts = 0;
+  const card = frame(`
+    <div class="prompt"><span class="tag">魔王關</span> ${name}的貪吃雲</div>
+    <div class="boss float" id="boss">${bossSvg(g, 'mad')}</div>
+    <div class="hp" id="hp"></div>
+    <div class="run-q" id="q"></div>
+  `);
+  const bossEl = card.querySelector('#boss'), hpEl = card.querySelector('#hp'), q = card.querySelector('#q');
+  function round() {
+    hpEl.textContent = '💜'.repeat(hp) + '🤍'.repeat(BOSS_HP - hp);
+    if (hp <= 0) return win();
+    const w = pool[k % pool.length], listen = k % 2 === 1; k++;
+    const opts = listen ? [w.w, ...distractors(w, 3, 'w')] : [w.g, ...distractors(w, 3, 'g')];
+    const ans = listen ? w.w : w.g;
+    q.innerHTML = listen
+      ? `<div class="row"><button class="icon-btn" id="sp" aria-label="聽發音"><span class="emo">🔊</span></button><span class="zh">聽到哪一個？</span></div>`
+      : `<div class="row"><div class="word" style="font-size:clamp(36px,7vw,56px)">${esc(w.w)}</div><button class="icon-btn" id="sp" aria-label="聽發音"><span class="emo">🔊</span></button></div>`;
+    q.insertAdjacentHTML('beforeend', `<div class="choices"></div><div class="heard" id="msg">答對就能打中貪吃雲！</div>`);
+    q.querySelector('#sp').onclick = () => say(w.w);
+    say(w.w);
+    const box = q.querySelector('.choices');
+    let tries = 0, done = false;
+    for (const o of shuffle(opts)) {
+      const b = h(`<button class="choice ${listen ? 'en' : ''}">${esc(o)}</button>`);
+      b.onclick = () => {
+        if (done) return;
+        tries++;
+        if (o === ans) {
+          done = true; b.classList.add('right'); sfx.yay(); burstAt(bossEl, ['💥', '⭐', '✨']);
+          if (tries === 1) { firsts++; gainStar(); }
+          hp--;
+          bossEl.classList.remove('hit', 'float'); void bossEl.offsetWidth; bossEl.classList.add('hit');
+          setTimeout(() => { bossEl.classList.remove('hit'); bossEl.classList.add('float'); round(); }, 800);
+        } else {
+          sfx.soft(); wiggle(b); b.classList.add('tried');
+          q.querySelector('#msg').textContent = '嘿嘿～貪吃雲在偷笑，再想想！';
+          if (tries >= 2) { [...box.children].find(x => x.textContent === ans).classList.add('glow'); q.querySelector('#msg').textContent = '答案在發亮的地方喔！'; }
+        }
+      };
+      box.appendChild(b);
+    }
+  }
+  function win() {
+    if (!S.bosses.includes(g)) S.bosses.push(g);
+    S.chests.push('bonus'); save();
+    logEvent({ type: 'boss', sid: ses.sid, u: g + 1, first: firsts, tries: k });
+    bossEl.innerHTML = bossSvg(g, 'happy');
+    sfx.fanfare(); burst(innerWidth / 2, innerHeight / 3, ['🎉', '⭐', '💜', '🌈']);
+    q.innerHTML = buddy(`打贏了！貪吃雲把吃掉的字吐出來，變成好朋友了！<br>得到一個寶箱，練完回首頁就能打開～`, 'cheer');
+    const nx = ISLES[(g + 1) % ISLES.length];
+    nextBtn(card, (g + 1) * 10 < UNITS.length ? `前往${nx[1]}！` : '太厲害了！', 'butter');
+  }
+  round();
+}
+
 /* ---------- 結束與存檔 ---------- */
 // 把一次練習的結果記進進度（正常結束、或下次打開時補記練到一半的那次，都走這裡）
 function settle(s) {
@@ -1358,6 +1730,7 @@ function settle(s) {
       out.rescued.push(id);
     }
     logEvent({ type: 'rescue', sid: s.sid, tries: Object.keys(s.res).length, got: out.rescued.map(id => BY_ID[id].w).join(' ') });
+    if (out.rescued.length) mission('rescue', out.rescued.length);
     return out;
   }
   const t = today();
@@ -1577,6 +1950,7 @@ function bonusRun(pool) {
     approach('🏁', '58%', () => {
       sfx.fanfare(); burstAt(runner, ['🎉', '⭐', '🏁', '💖']);
       logEvent({ type: 'bonus', first: firsts, tries: ids.length, stars: firsts }); flush();
+      mission('bonus');
       q.innerHTML = buddy(`跑到終點了！一次答對 <b>${firsts}</b> 題，得到 <span class="emo">⭐</span> ${firsts}！`, 'cheer');
       const b = h(`<button class="btn big butter">打開寶箱 <span class="emo">🎁</span></button>`);
       b.onclick = () => { sfx.tap(); openChest('bonus', home); };
@@ -1595,9 +1969,12 @@ function home() {
   const hour = new Date().getHours();
   const hi = hour < 11 ? '早安' : hour < 18 ? '午安' : '晚安';
   const st = streak(), nx = nextGrow(), resc = rescueList().length, doneToday = S.days.includes(today());
+  const se = season(), boss = u == null ? pendingBoss() : null;
+  const golds = Object.values(S.words).filter(r => r.box >= 4).length;
+  seasonGift();
   $app.innerHTML = '';
   const card = h(`<section class="card">
-    <h1 class="hello">${hi}，${NAME}！</h1>
+    <h1 class="hello">${hi}，${NAME}！${se ? ` <span class="en" style="color:var(--pink-deep)">${se.greet}</span>` : ''}</h1>
     <button class="island-box compact" id="isle" aria-label="我的小島">${islandSvg()}</button>
     <div class="chips">
       <span class="pill"><span class="emo">🔥</span> ${st ? `連續 <b>${st}</b> 天` : '今天開始第 <b>1</b> 天！'}</span>
@@ -1605,14 +1982,20 @@ function home() {
     </div>
     <div class="plan">
       <div class="plan-item"><span class="emo">🔁</span><div><b>${due ? `複習 ${Math.min(due, MAX_REVIEW)} 個字` : '今天沒有要複習的字'}</b><span>${due ? '以前學過、今天要再見一次的字' : '很棒，先學新字！'}</span></div></div>
-      <div class="plan-item"><span class="emo">🌱</span><div><b>${u == null ? '全部學完了！' : `新單元 <span class="en">NCL4-${u}</span>`}</b><span>${u == null ? '多複習就好' : `還有 ${left} 個新字`}</span></div></div>
+      ${boss != null
+        ? `<div class="plan-item"><span class="emo">⚔️</span><div><b>魔王在等你！</b><span>${ISLES[boss % ISLES.length][1]}的貪吃雲，開始練習就會遇到</span></div></div>`
+        : `<div class="plan-item"><span class="emo">🌱</span><div><b>${u == null ? '全部學完了！' : `新單元 <span class="en">NCL4-${u}</span>`}</b><span>${u == null ? '多複習就好' : `還有 ${left} 個新字`}</span></div></div>`}
     </div>
     <button class="btn big" id="go">開始練習 <span class="emo">🚀</span></button>
     ${S.chests.length ? `<button class="btn mint" id="chest">打開寶箱 <span class="emo">🎁</span> × ${S.chests.length}</button>` : ''}
+    ${missionsHtml()}
     <div class="home-actions">
       <button class="btn soft small" id="units"><span class="emo">🗺️</span> 闖關地圖</button>
       <button class="btn soft small" id="shop"><span class="emo">👗</span> 小羊衣櫥</button>
       <button class="btn soft small" id="rescue"><span class="emo">🚑</span> 救援站${resc ? ` <b class="en">${resc}</b>` : ''}</button>
+      <button class="btn soft small" id="dex"><span class="emo">🃏</span> 單字圖鑑 <b class="en">${golds}</b><span class="emo">✨</span></button>
+      <button class="btn soft small" id="coupon"><span class="emo">🎟️</span> 媽媽兌換券</button>
+      ${REMOTE.message ? `<button class="btn soft small" id="letter"><span class="emo">💌</span> 媽媽的信</button>` : ''}
       <button class="btn soft small" id="book"><span class="emo">📒</span> 貼紙簿 ${S.badges.length}/${UNITS.length}</button>
     </div>
     <div class="meta-row"><span><i class="emo">⭐</i> 星星 ${S.stars}</span><span><i class="emo">📅</i> 練習了 ${S.days.length} 天</span><span><i class="emo">📚</i> 學過 ${Object.keys(S.words).length} / ${W.length} 個字</span></div>
@@ -1625,11 +2008,16 @@ function home() {
   card.querySelector('#shop').onclick = () => { sfx.tap(); shopSlot = 'head'; tryOn = null; shopView(); };
   card.querySelector('#rescue').onclick = () => { sfx.tap(); rescueView(); };
   card.querySelector('#isle').onclick = () => { sfx.tap(); islandView(); };
+  card.querySelector('#dex').onclick = () => { sfx.tap(); dexFilter = 'all'; dexView(); };
+  card.querySelector('#coupon').onclick = () => { sfx.tap(); couponView(); };
+  const lt = card.querySelector('#letter');
+  if (lt) lt.onclick = () => { sfx.tap(); showLetter(); };
   const ch = card.querySelector('#chest');
   if (ch) ch.onclick = () => { sfx.tap(); openChest(null, home); };
   flush();
-  // 8 點後還沒練：一打開就吼；停在首頁跨過 8 點也會吼
+  // 8 點後還沒練：一打開就吼；停在首頁跨過 8 點也會吼。老虎媽媽沒出來時，才送媽媽的新信
   if (isLate()) showLateTiger();
+  else if (REMOTE.message && REMOTE.message !== S.msgSeen) showLetter(true);
   clearInterval(homeTimer);
   homeTimer = setInterval(() => { if (!ses && isLate() && lateShownOn !== today()) showLateTiger(); }, 30000);
 }
@@ -1651,20 +2039,22 @@ function unitsView() {
   for (let g = 0; g * 10 < UNITS.length; g++) {
     const us = UNITS.slice(g * 10, g * 10 + 10);
     const [e, name] = ISLES[g % ISLES.length];
-    const doneN = us.filter(u => unitLeft(u).length === 0).length;
-    const sec = h(`<div class="isle"><div class="isle-head"><span class="emo">${e}</span><b>${name}</b><span class="sub">${doneN}/${us.length} 關</span></div></div>`);
+    const doneN = us.filter(u => unitLeft(u).length === 0).length, open = isleOpen(g);
+    const sec = h(`<div class="isle"><div class="isle-head"><span class="emo">${open ? e : '🔒'}</span><b>${name}</b><span class="sub">${open ? `${doneN}/${us.length} 關` : '打贏上一座島的魔王就能來'}</span></div></div>`);
     for (let r = 0; r < us.length; r += 5) {
       const row = h(`<div class="map-row ${(r / 5) % 2 ? 'rev' : ''}"></div>`);
       for (const u of us.slice(r, r + 5)) {
         const all = unitWords(u).length, done = all - unitLeft(u).length;
-        const b = h(`<button class="node ${u === cur ? 'cur' : ''} ${done === all ? 'done' : ''}" aria-label="第 ${u} 關">
+        const b = h(`<button class="node ${u === cur ? 'cur' : ''} ${done === all ? 'done' : ''} ${open ? '' : 'locked'}" aria-label="第 ${u} 關">
           ${u === cur ? `<span class="node-lamb">${lamb('smile')}</span>` : ''}${done === all ? '<span class="flag emo">🚩</span>' : ''}
           <span class="emo">${unitWords(u)[0].e}</span><span class="num">${u}</span><span class="sub">${done}/${all}</span></button>`);
-        b.onclick = () => { if (done === all) { wiggle(b); return; } sfx.tap(); S.curUnit = u; save(); home(); };
+        b.onclick = () => { if (done === all || !open) { wiggle(b); return; } sfx.tap(); S.curUnit = u; save(); home(); };
         row.appendChild(b);
       }
       sec.appendChild(row);
     }
+    sec.appendChild(h(`<div class="boss-line">${S.bosses.includes(g) ? '<span class="emo">☁️</span> 貪吃雲已經變成好朋友了 ✓'
+      : isleDone(g) ? '<span class="emo">⚔️</span> 魔王在等你！開始練習就會遇到' : '<span class="emo">👾</span> 這座島的關卡都學完，魔王就會出現'}</div>`));
     card.appendChild(sec);
   }
   $app.appendChild(card);
@@ -1727,13 +2117,119 @@ function islandView() {
   const have = ISLAND.filter(x => x[0] <= days), soon = ISLAND.filter(x => x[0] > days).slice(0, 3);
   const pets = FRIENDS.slice(0, Math.min(S.friends || 0, FRIENDS.length));
   const card = h(`<section class="card">
-    <div class="island-box">${islandSvg()}</div>
+    <div class="island-box talkable">${islandSvg()}<button class="lamb-hit" aria-label="跟小羊說話"></button></div>
+    <div class="bubble talk" id="talk">點一下小羊，牠會跟你說英文喔！</div>
     ${buddy(days ? `小島已經蓋了 <b>${days}</b> 天！每天練滿 ${COUNT_MIN} 分鐘，小島就會慢慢長出新東西。` : `今天練滿 ${COUNT_MIN} 分鐘，小島就會開始長草喔！`, 'smile')}
     ${have.length ? `<div class="learned">${have.map(x => `<span><i class="emo">${x[1]}</i> ${x[2]}</span>`).join('')}</div>` : ''}
     ${soon.length ? `<div class="heard">接下來：${soon.map(x => `第 <b class="en">${x[0]}</b> 天 <span class="emo">❓</span>`).join('　')}</div>` : ''}
     <div class="heard">${pets.length ? `住在島上的小動物：<span class="friends">${pets.join('')}</span>` : '去救援站救小動物，牠們會搬來小島住！'}</div>
   </section>`);
+  let last = -1;
+  card.querySelector('.lamb-hit').onclick = () => {
+    const lines = lambLines();
+    let i = rnd(lines.length); if (i === last) i = (i + 1) % lines.length; last = i;
+    const [en, zh] = lines[i];
+    const t = card.querySelector('#talk');
+    t.innerHTML = `<span class="en">${esc(en)}</span>${esc(zh)}`;
+    t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop');
+    say(en);
+    logEvent({ type: 'talk', got: en });
+  };
   $app.appendChild(card);
+}
+
+// 單字圖鑑：學過的字都是一張卡，複習到第 4 盒以上（連續答對、間隔兩週）變金卡
+let dexFilter = 'all';
+function dexView() {
+  $app.innerHTML = '';
+  $app.appendChild(backBar('單字圖鑑'));
+  const mine = W.filter(w => S.words[w.id]), gold = w => S.words[w.id].box >= 4;
+  const g = mine.filter(gold).length;
+  const list = dexFilter === 'gold' ? mine.filter(gold) : dexFilter === 'plain' ? mine.filter(w => !gold(w)) : mine;
+  const tabs = [['all', `全部 ${mine.length}`], ['gold', `金卡 ${g}`], ['plain', `還不是金卡 ${mine.length - g}`]];
+  const card = h(`<section class="card ${dexFilter === 'all' ? '' : 'still'}">
+    ${buddy(mine.length ? `收集了 <b>${mine.length}</b> 張卡片，其中 <b>${g}</b> 張是金卡！<br>複習的時候一直答對，卡片就會變成金色。點卡片可以聽發音。`
+      : '還沒有卡片，開始練習就會收集到喔！', 'smile')}
+    <div class="tabs">${tabs.map(([k, n]) => `<button class="tab ${k === dexFilter ? 'on' : ''}" data-k="${k}">${n}</button>`).join('')}</div>
+    <div class="dex">${list.map(w => `<button class="dexcard ${gold(w) ? 'gold' : ''}" data-id="${w.id}"><span class="emo">${w.e}</span><b>${esc(w.w)}</b><span>${esc(w.g)}</span></button>`).join('')}</div>
+  </section>`);
+  card.querySelectorAll('.tab').forEach(b => b.onclick = () => { sfx.tap(); dexFilter = b.dataset.k; dexView(); });
+  card.querySelectorAll('.dexcard').forEach(b => b.onclick = () => say(BY_ID[b.dataset.id].w));
+  $app.appendChild(card);
+}
+
+// 媽媽兌換券：用星星換，換到的券拿給媽媽看就能兌現
+function couponView() {
+  $app.innerHTML = '';
+  $app.appendChild(backBar('媽媽兌換券'));
+  const mine = S.coupons.slice(-5).reverse();
+  const md = s => { const d = new Date(s); return `${d.getMonth() + 1}/${d.getDate()}`; };
+  const card = h(`<section class="card">
+    ${buddy('存夠星星就能換！換好之後拿給媽媽看，就能兌現喔～', 'cheer')}
+    <div class="star-count"><span class="emo">⭐</span><b>${S.stars}</b></div>
+    <div class="coupons"></div>
+    ${mine.length ? `<div class="heard">換過的券：${mine.map(c => `${md(c.at)} <span class="emo">${c.e}</span> ${esc(c.name)}`).join('　')}</div>` : ''}
+  </section>`);
+  const box = card.querySelector('.coupons');
+  for (const c of coupons()) {
+    const short = S.stars < c.stars;
+    const b = h(`<button class="coupon ${short ? 'short' : ''}"><span class="emo">${esc(c.e || '🎟️')}</span>
+      <div><b>${esc(c.name)}</b><span class="price">⭐ ${c.stars}${short ? `　還差 ${c.stars - S.stars}` : ''}</span></div></button>`);
+    b.onclick = () => {
+      if (short) { wiggle(b); sfx.soft(); return; }
+      sfx.tap(); redeem(c);
+    };
+    box.appendChild(b);
+  }
+  $app.appendChild(card);
+}
+function redeem(c) {
+  const m = h(`<div class="overlay"><section class="card">
+    ${buddy(`要用 <b>${c.stars}</b> 顆星星，換「<b>${esc(c.name)}</b>」嗎？`, 'think')}
+    <div class="row"><button class="btn butter" id="yes">換！<span class="emo">${esc(c.e || '🎟️')}</span></button><button class="btn soft small" id="no">再想想</button></div>
+  </section></div>`);
+  document.body.appendChild(m);
+  m.querySelector('#no').onclick = () => { sfx.tap(); m.remove(); };
+  m.querySelector('#yes').onclick = () => {
+    if (S.stars < c.stars) { m.remove(); return; }
+    S.stars -= c.stars;
+    const at = new Date().toISOString();
+    S.coupons.push({ name: c.name, e: c.e, stars: c.stars, at }); save();
+    logEvent({ type: 'redeem', got: c.name, tries: c.stars }); flush();
+    sfx.fanfare();
+    const d = new Date(at);
+    m.innerHTML = '';
+    const t = h(`<section class="card"><div class="ticket">
+      <span class="emo">${esc(c.e || '🎟️')}</span><h2>${esc(c.name)}</h2>
+      <div class="heard">${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}　${NAME}用 ⭐${c.stars} 換到的</div>
+    </div>${buddy('拿給媽媽看，就能兌現喔！', 'cheer')}<button class="btn" id="ok">好！</button></section>`);
+    t.querySelector('#ok').onclick = () => { sfx.tap(); m.remove(); couponView(); };
+    m.appendChild(t);
+    burst(innerWidth / 2, innerHeight / 3, ['🎉', '⭐', '💖', '🎟️']);
+  };
+}
+
+// 媽媽的信：試算表 message 分頁 A2 的內容；改了內容，陽寶下次打開就會收到
+function showLetter(isNew) {
+  if (!REMOTE.message || document.querySelector('.overlay, .tiger-mask')) return;
+  const m = h(`<div class="overlay">
+    <div class="envelope" role="button" aria-label="打開信">💌</div>
+    <div class="bubble">${isNew ? '小羊送來一封媽媽的信！' : '媽媽的信'}碰一下打開～</div>
+  </div>`);
+  document.body.appendChild(m);
+  m.querySelector('.envelope').onclick = () => {
+    sfx.yay();
+    m.innerHTML = '';
+    const c = h(`<section class="card">${lamb('cheer').replace('<svg ', '<svg width="110" height="110" ')}
+      <h2 style="margin:0">給${NAME}的信</h2><div class="letter">${esc(REMOTE.message)}</div>
+      <button class="btn" id="ok">收到了 <span class="emo">💖</span></button></section>`);
+    c.querySelector('#ok').onclick = () => {
+      sfx.tap();
+      if (S.msgSeen !== REMOTE.message) { S.msgSeen = REMOTE.message; save(); logEvent({ type: 'letter', got: 'read' }); }
+      m.remove();
+    };
+    m.appendChild(c);
+  };
 }
 
 function rescueView() {
@@ -1792,6 +2288,11 @@ restoreIfEmpty().then(() => {
   // 上次練到一半就關掉：先把那次學過的字補記起來
   if (S.pending) { const p = S.pending; S.pending = null; settle(p); save(); }
   home();
+  // 兌換券和媽媽的信放在試算表；先用上次存的畫首頁，抓到新的信再重畫
+  const before = REMOTE.message;
+  loadRemote().then(() => {
+    if (REMOTE.message !== before && !ses && document.getElementById('go') && lateShownOn !== today()) home();
+  });
   // 大人試看用：網址加 #tiger 或 #idle
   if (location.hash === '#tiger') showLateTiger();
   if (location.hash === '#idle') setTimeout(showIdleTiger, 300);
