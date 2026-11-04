@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFE9DC">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>陽寶的英文小島</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -284,6 +288,111 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
   0% { transform: translate(0, 0); } 25% { transform: translate(-6px, 3px); }
   50% { transform: translate(5px, -4px); } 75% { transform: translate(-4px, -2px); } 100% { transform: translate(0, 0); }
 }
+/* ---------- 軟Q手感：一碰就壓扁再彈回來 ---------- */
+.jelly { animation: jelly .42s ease-out; }
+@keyframes jelly {
+  0% { transform: scale(1, 1); } 30% { transform: scale(1.1, .86); } 55% { transform: scale(.94, 1.08); }
+  75% { transform: scale(1.03, .97); } 100% { transform: scale(1, 1); }
+}
+.card { animation: card-in .38s cubic-bezier(.3, 1.5, .5, 1); }
+.card.still { animation: none; }
+@keyframes card-in { from { transform: scale(.88); opacity: 0; } }
+.river-lamb svg { overflow: visible; }
+.river-lamb.hop svg { animation: lamb-hop .7s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes lamb-hop { 40% { transform: translateY(-26px) rotate(-180deg) scale(1.15); } 100% { transform: translateY(0) rotate(-360deg); } }
+.aura-back { opacity: .6; }
+.aura-dot { animation: twinkle 1.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+.aura-dot.d1 { animation-delay: .4s; } .aura-dot.d2 { animation-delay: .8s; } .aura-dot.d3 { animation-delay: 1.2s; }
+@keyframes twinkle { from { opacity: .35; transform: translateY(3px) scale(.8); } to { opacity: 1; transform: translateY(-3px) scale(1.1); } }
+
+/* ---------- 小島 ---------- */
+.hello { margin: 0; font-size: clamp(28px, 5.4vw, 40px); }
+.island-box { display: block; width: 100%; padding: 0; border-radius: 26px; overflow: hidden; box-shadow: inset 0 0 0 3px var(--line); background: #DDF4FA; }
+.island-box svg { display: block; width: 100%; height: auto; }
+.island-box.compact svg { height: clamp(220px, 40vh, 360px); }   /* 首頁：裁掉上面的天空，讓「開始練習」不被擠下去 */
+.chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.pill { background: #fff; border-radius: 999px; padding: 6px 16px; box-shadow: 0 4px 0 var(--line); font-size: 19px; }
+.pill b { font-family: var(--font-en); font-size: 22px; }
+.friends { font-family: var(--font-emoji); font-size: 32px; letter-spacing: 4px; }
+
+/* ---------- 跳出來的小視窗（寶箱、確定要休息嗎） ---------- */
+.overlay {
+  position: fixed; inset: 0; z-index: 35; background: rgba(91, 59, 49, .55);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  padding: 16px; text-align: center;
+}
+.overlay .card { max-width: 560px; width: 100%; }
+.overlay > .bubble { font-size: 26px; font-weight: 700; text-align: center; }
+.overlay > .bubble::before { display: none; }
+.chest { font-family: var(--font-emoji); font-size: 140px; line-height: 1; cursor: pointer; animation: chest-bob 1.2s ease-in-out infinite; }
+.chest.shake { animation: quake .1s linear infinite; }
+@keyframes chest-bob { 50% { transform: translateY(-12px) scale(1.04, .97); } }
+.prize { font-family: var(--font-emoji); font-size: 110px; line-height: 1; animation: prize-in .6s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes prize-in { from { transform: scale(0) rotate(-90deg); } }
+.rar { display: inline-block; font-size: 16px; font-weight: 700; padding: 2px 12px; border-radius: 10px; color: #fff; background: var(--ink-soft); }
+.rar.r { background: var(--mint-deep); }
+.rar.s { background: linear-gradient(90deg, #FF8FAB, #B99BEA, #4DB59D); }
+
+/* ---------- 衣櫥 ---------- */
+.wardrobe-lamb svg { width: 180px; height: 180px; overflow: visible; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.tab { padding: 8px 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 0 var(--line); font-size: 22px; font-weight: 700; }
+.tab.on { background: var(--pink); color: #fff; box-shadow: 0 4px 0 var(--pink-deep); }
+.items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; width: 100%; }
+.item {
+  border-radius: 22px; background: #fff; box-shadow: 0 5px 0 var(--line), inset 0 0 0 3px var(--line);
+  padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.item .ie { font-family: var(--font-emoji); font-size: 50px; line-height: 1.15; }
+.item b { font-size: 19px; }
+.item .state { font-size: 17px; color: var(--ink-soft); }
+.item.worn { background: #E2F8F1; box-shadow: 0 5px 0 var(--mint-deep), inset 0 0 0 3px var(--mint); }
+.item.trying { background: #FFF6D8; box-shadow: 0 5px 0 var(--butter-deep), inset 0 0 0 3px var(--butter); }
+
+/* ---------- 闖關地圖 ---------- */
+.isle { width: 100%; }
+.isle-head { display: flex; align-items: center; gap: 10px; justify-content: center; font-size: 24px; margin: 10px 0 0; }
+.isle-head .emo { font-size: 34px; }
+.isle-head .sub { font-size: 16px; color: var(--ink-soft); }
+.map-row { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 22px 0 12px; }
+.map-row.rev { direction: rtl; }
+.map-row::before { content: ""; position: absolute; left: 10%; right: 10%; top: 55%; border-top: 7px dotted #EBCDAE; }
+.node {
+  position: relative; z-index: 1; direction: ltr; justify-self: center; width: 100%; max-width: 116px; aspect-ratio: 1;
+  border-radius: 50%; background: #fff; box-shadow: 0 5px 0 var(--line), inset 0 0 0 3px var(--line);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.map-row .node:nth-child(even) { margin-top: 14px; }
+.node .emo { font-size: 28px; line-height: 1.1; }
+.node .num { font-family: var(--font-en); font-weight: 600; font-size: 20px; line-height: 1; }
+.node .sub { font-family: var(--font-en); font-size: 13px; color: var(--ink-soft); }
+.node.done { background: #FFF6D8; }
+.node.cur { box-shadow: 0 5px 0 var(--pink-deep), inset 0 0 0 4px var(--pink); }
+.node .flag { position: absolute; top: -12px; right: -4px; font-size: 26px; }
+.node-lamb { position: absolute; top: -36px; left: 50%; width: 50px; height: 50px; transform: translateX(-50%); }
+.node-lamb svg { width: 100%; height: 100%; overflow: visible; }
+@media (max-width: 560px) { .node .sub { display: none; } .node .emo { font-size: 20px; } .node .num { font-size: 16px; } }
+
+/* ---------- 獎勵關：小羊跑酷 ---------- */
+.runner { position: relative; width: 100%; height: 230px; border-radius: 26px; overflow: hidden; background: linear-gradient(#FFE9DC, #DDF4FA 75%); box-shadow: inset 0 0 0 3px var(--line); }
+.run-cloud { position: absolute; font-family: var(--font-emoji); font-size: 40px; opacity: .9; }
+.run-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: repeating-linear-gradient(90deg, #9EDC8F 0 40px, #8CD17D 40px 80px); border-top: 5px solid #7CC46C; }
+.runner.running .run-ground { animation: ground .5s linear infinite; }
+@keyframes ground { to { background-position: -80px 0; } }
+.run-lamb { position: absolute; left: 6%; bottom: 40px; width: 100px; height: 100px; }
+.run-lamb svg { width: 100%; height: 100%; overflow: visible; }
+.runner.running .run-lamb { animation: trot .25s ease-in-out infinite alternate; }
+@keyframes trot { to { transform: translateY(-7px); } }
+.runner .run-lamb.jump { animation: hop .9s ease-out; }
+@keyframes hop { 45% { transform: translateY(-120px) rotate(-15deg); } 100% { transform: translateY(0); } }
+.run-ob { position: absolute; bottom: 44px; left: 105%; font-family: var(--font-emoji); font-size: 60px; line-height: 1; }
+.run-q { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; min-height: 170px; }
+.dots { font-family: var(--font-emoji); font-size: 26px; letter-spacing: 6px; }
+
+/* ---------- 救援站 ---------- */
+.cages { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.cage { background: #fff; border-radius: 18px; padding: 8px 14px; box-shadow: 0 4px 0 var(--line); display: flex; gap: 8px; align-items: center; font-size: 22px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -309,6 +418,10 @@ const NEW_BATCH = 6;
 const MAX_REVIEW = 8;
 const INTERVAL = [0, 1, 3, 7, 14, 30, 60];
 const NAME = '陽寶';
+const COUNT_MIN = 10;      // 練滿幾分鐘，今天才算練過（老虎媽媽、小島、連續天數都看這個）
+const MAX_RESCUE = 6;      // 救援站一次救幾個字
+const RUN_N = 5;           // 獎勵關有幾個障礙
+const MILESTONES = [3, 7, 14, 21, 30, 45, 60, 90, 120];   // 連續幾天送超稀有寶箱
 const CFG = window.YB_CONFIG || {};
 const LS_KEY = 'yangbao-l4-v1';
 const $app = document.getElementById('app');
@@ -325,7 +438,13 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const h = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
 
 /* ---------- 狀態 ---------- */
-function blankState() { return { words: {}, stars: 0, badges: [], days: [], curUnit: UNITS[0], outbox: [], device: uid() }; }
+function blankState() {
+  return {
+    words: {}, stars: 0, badges: [], days: [], curUnit: UNITS[0], outbox: [], device: uid(),
+    owned: ['bow'], wear: { head: 'bow' }, friends: 0, chests: [], bonusOn: '', lastStars: null,
+    pending: null,   // 練到一半關掉時的進度，下次打開時補記
+  };
+}
 let S = load();
 function load() {
   try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && s.words) return Object.assign(blankState(), s); } catch (e) {}
@@ -453,7 +572,50 @@ function wool(circles) {
   const c = (fill, stroke) => circles.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" ${stroke ? 'stroke="#E9D3C6" stroke-width="5"' : ''}/>`).join('');
   return c('#FFFDF9', true) + c('#FFFDF9', false);
 }
-function lamb(mood = 'smile') {
+/* ---------- 小羊的衣櫥：帽子、眼鏡、手上、特效 ---------- */
+const RARITY = { n: '普通', r: '稀有', s: '超稀有' };
+const SLOTS = [['head', '帽子'], ['face', '眼鏡'], ['hand', '手上'], ['aura', '特效']];
+// chest：只能從寶箱開到，不能用星星買
+const ITEMS = [
+  { id: 'bow', slot: 'head', e: '🎀', name: '粉紅蝴蝶結', r: 'n', price: 0 },
+  { id: 'flower', slot: 'head', e: '🌸', name: '小花', r: 'n', price: 12 },
+  { id: 'cap', slot: 'head', e: '🧢', name: '棒球帽', r: 'n', price: 15 },
+  { id: 'straw', slot: 'head', e: '👒', name: '草帽', r: 'n', price: 15 },
+  { id: 'tophat', slot: 'head', e: '🎩', name: '紳士帽', r: 'r', price: 40 },
+  { id: 'grad', slot: 'head', e: '🎓', name: '博士帽', r: 'r', price: 45 },
+  { id: 'crown', slot: 'head', e: '👑', name: '皇冠', r: 's', chest: true },
+  { id: 'glasses', slot: 'face', e: '👓', name: '圓眼鏡', r: 'n', price: 15 },
+  { id: 'goggles', slot: 'face', e: '🥽', name: '游泳鏡', r: 'n', price: 20 },
+  { id: 'shades', slot: 'face', e: '🕶️', name: '酷墨鏡', r: 'r', price: 40 },
+  { id: 'balloon', slot: 'hand', e: '🎈', name: '紅氣球', r: 'n', price: 12 },
+  { id: 'lolly', slot: 'hand', e: '🍭', name: '棒棒糖', r: 'n', price: 12 },
+  { id: 'sunflower', slot: 'hand', e: '🌻', name: '向日葵', r: 'n', price: 15 },
+  { id: 'icecream', slot: 'hand', e: '🍦', name: '冰淇淋', r: 'n', price: 15 },
+  { id: 'guitar', slot: 'hand', e: '🎸', name: '吉他', r: 'r', price: 45 },
+  { id: 'wand', slot: 'hand', e: '🪄', name: '魔法棒', r: 'r', price: 50 },
+  { id: 'trophy', slot: 'hand', e: '🏆', name: '金獎盃', r: 's', chest: true },
+  { id: 'bubbles', slot: 'aura', e: '🫧', name: '泡泡', r: 'n', price: 30 },
+  { id: 'sparkle', slot: 'aura', e: '✨', name: '閃閃發光', r: 'r', price: 60 },
+  { id: 'hearts', slot: 'aura', e: '💖', name: '愛心環繞', r: 'r', price: 60 },
+  { id: 'rainbow', slot: 'aura', e: '🌈', name: '彩虹光環', r: 's', chest: true },
+  { id: 'starlight', slot: 'aura', e: '🌟', name: '星光', r: 's', chest: true },
+  { id: 'butterfly', slot: 'aura', e: '🦋', name: '蝴蝶飛飛', r: 's', chest: true },
+];
+const ITEM = Object.fromEntries(ITEMS.map(x => [x.id, x]));
+const emoT = (e, x, y, size, rot = 0, cls = '') =>
+  `<text class="emo ${cls}" x="${x}" y="${y}" font-size="${size}" text-anchor="middle" dominant-baseline="central"${rot ? ` transform="rotate(${rot} ${x} ${y})"` : ''}>${e}</text>`;
+
+function lamb(mood = 'smile', wear = S.wear || {}) {
+  const head = ITEM[wear.head], face = ITEM[wear.face], hand = ITEM[wear.hand], aura = ITEM[wear.aura];
+  const bow = `<g transform="translate(86 20) rotate(18)">
+      <path d="M0 0 L-11 -7 Q-14 0 -11 7 Z" fill="#FF8FAB" stroke="#E86A8A" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M0 0 L11 -7 Q14 0 11 7 Z" fill="#FF8FAB" stroke="#E86A8A" stroke-width="1.6" stroke-linejoin="round"/>
+      <circle r="3.6" fill="#E86A8A"/>
+    </g>`;
+  const hat = !head ? '' : head.id === 'bow' ? bow : head.id === 'flower' ? emoT(head.e, 86, 22, 26, 15) : emoT(head.e, 60, 10, 44, -8);
+  const auraBack = aura && aura.id === 'rainbow' ? emoT(aura.e, 60, 44, 118, 0, 'aura-back') : '';
+  const auraDots = aura && aura.id !== 'rainbow'
+    ? [[8, 30], [112, 26], [4, 98], [116, 92]].map(([x, y], i) => emoT(aura.e, x, y, 17, 0, 'aura-dot d' + i)).join('') : '';
   // 大眼睛：深色橢圓＋一大一小兩顆亮點
   const eye = (x) => `<ellipse cx="${x}" cy="70" rx="6.8" ry="8" fill="#3E2A22"/>
     <circle cx="${x + 2.4}" cy="66.6" r="2.8" fill="#fff"/><circle cx="${x - 2.2}" cy="73.4" r="1.3" fill="#fff"/>`;
@@ -465,7 +627,8 @@ function lamb(mood = 'smile') {
     : mood === 'think'
       ? '<path d="M56 85 q4 -2.5 8 0" stroke="#3E2A22" stroke-width="2.6" fill="none" stroke-linecap="round"/>'
       : '<path d="M55 82 q2.5 3.5 5 0 q2.5 3.5 5 0" stroke="#3E2A22" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
-  return `<svg viewBox="0 0 120 120" role="img" aria-label="小羊">
+  return `<svg viewBox="0 0 120 120" role="img" aria-label="小羊" overflow="visible">
+    ${auraBack}
     <ellipse cx="60" cy="114" rx="30" ry="4.5" fill="#000" opacity=".06"/>
     <ellipse cx="17" cy="72" rx="15" ry="8" transform="rotate(-18 17 72)" fill="#FBD9C6" stroke="#EDBFA8" stroke-width="2"/>
     <ellipse cx="18" cy="72" rx="9" ry="4" transform="rotate(-18 18 72)" fill="#FFB3C4"/>
@@ -480,15 +643,74 @@ function lamb(mood = 'smile') {
     <ellipse cx="83" cy="80" rx="8" ry="5" fill="#FF9EB5" opacity=".8"/>
     <path d="M57.5 76.5 q2.5 -2 5 0 q-2.5 3.5 -5 0z" fill="#E88A9F"/>
     ${mouth}
-    <g transform="translate(86 20) rotate(18)">
-      <path d="M0 0 L-11 -7 Q-14 0 -11 7 Z" fill="#FF8FAB" stroke="#E86A8A" stroke-width="1.6" stroke-linejoin="round"/>
-      <path d="M0 0 L11 -7 Q14 0 11 7 Z" fill="#FF8FAB" stroke="#E86A8A" stroke-width="1.6" stroke-linejoin="round"/>
-      <circle r="3.6" fill="#E86A8A"/>
-    </g>
-    <path d="M14 18 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z" fill="#FFD45E"/>
+    ${face ? emoT(face.e, 60, 71, 52) : ''}
+    ${hat}
+    ${hand ? emoT(hand.e, 102, 98, 32, 12) : ''}
+    ${aura ? auraDots : '<path d="M14 18 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z" fill="#FFD45E"/>'}
   </svg>`;
 }
 const buddy = (text, mood) => `<div class="buddy">${lamb(mood)}<div class="bubble">${text}</div></div>`;
+
+/* ---------- 小島：每練滿一天長出一樣東西 ---------- */
+// [第幾天, emoji, 名稱, x, y, 大小]（畫布 400×260，y 是中心點）
+const ISLAND = [
+  [1, '🌱', '小草', 150, 200, 22],
+  [2, '🌷', '鬱金香', 268, 204, 24],
+  [3, '🌳', '大樹', 104, 160, 58],
+  [4, '🍄', '蘑菇', 300, 210, 26],
+  [5, '🏠', '小羊的家', 312, 150, 52],
+  [6, '🌻', '向日葵', 128, 214, 26],
+  [7, '🌈', '彩虹', 322, 92, 120],
+  [8, '🌴', '椰子樹', 356, 172, 50],
+  [9, '⛲', '噴水池', 254, 176, 34],
+  [10, '⛵', '小帆船', 40, 236, 36],
+  [12, '🛝', '溜滑梯', 62, 196, 34],
+  [14, '🎈', '熱氣球', 336, 60, 36],
+  [16, '🎠', '旋轉木馬', 178, 226, 32],
+  [18, '🎡', '摩天輪', 54, 138, 58],
+  [21, '🏰', '城堡', 262, 124, 48],
+  [25, '🐳', '鯨魚', 372, 240, 34],
+  [30, '🚂', '小火車', 236, 232, 30],
+  [35, '⛺', '帳篷', 142, 176, 30],
+  [45, '🎪', '馬戲團', 144, 124, 40],
+  [60, '🚀', '火箭', 370, 96, 40],
+];
+const FRIENDS = ['🐰', '🐥', '🐢', '🐹', '🦔', '🐼', '🐨', '🦊', '🐸', '🐧', '🐞', '🐿️', '🦉', '🐬', '🐙', '🦄'];
+const FRIEND_POS = [[84, 214], [112, 228], [296, 230], [330, 214], [204, 242], [116, 192], [288, 192], [182, 204],
+  [222, 206], [346, 202], [48, 178], [146, 236], [266, 240], [318, 190], [80, 176], [372, 206]];
+function islandSvg(days = S.days.length, friends = S.friends || 0) {
+  const grass = days >= 1;
+  const things = ISLAND.filter(x => x[0] <= days).sort((a, b) => a[4] - b[4]);
+  const pets = FRIENDS.slice(0, Math.min(friends, FRIENDS.length)).map((e, i) => emoT(e, FRIEND_POS[i][0], FRIEND_POS[i][1], 22)).join('');
+  return `<svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMax slice" role="img" aria-label="陽寶的小島">
+    <defs><linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE9DC"/><stop offset="1" stop-color="#E3F6FB"/></linearGradient></defs>
+    <rect width="400" height="150" fill="url(#skyg)"/>
+    <rect y="148" width="400" height="112" fill="#A9E3F0"/>
+    <path d="M0 160 q20 -8 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#fff" stroke-width="3" fill="none" opacity=".6"/>
+    <circle cx="44" cy="40" r="18" fill="#FFD45E"/>
+    <g fill="#fff" opacity=".9"><ellipse cx="120" cy="36" rx="26" ry="11"/><ellipse cx="138" cy="30" rx="16" ry="11"/><ellipse cx="290" cy="44" rx="22" ry="9"/></g>
+    <ellipse cx="200" cy="186" rx="174" ry="58" fill="#F7E4CF" stroke="#EBCDAE" stroke-width="3"/>
+    ${grass ? '<ellipse cx="200" cy="176" rx="152" ry="44" fill="#BFE8A6" stroke="#9FD68A" stroke-width="3"/>' : ''}
+    ${things.map(x => emoT(x[1], x[3], x[4], x[5])).join('')}
+    ${lamb('smile').replace('<svg ', '<svg x="158" y="102" width="84" height="84" ')}
+    ${pets}
+  </svg>`;
+}
+function nextGrow() { return ISLAND.find(x => x[0] > S.days.length) || null; }
+// 連續天數：今天還沒練就從昨天往回數，所以早上打開不會變 0
+function streak() {
+  const set = new Set(S.days), d = new Date();
+  if (!set.has(today(d))) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (set.has(today(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+// 救援站：答錯次數比救回來的次數多的字
+function rescueList() {
+  const need = r => (r.miss || 0) - (r.rescued || 0);
+  return Object.entries(S.words).filter(([id, r]) => BY_ID[id] && need(r) > 0)
+    .sort((a, b) => need(b[1]) - need(a[1])).map(([id]) => id);
+}
 
 /* ---------- 老虎媽媽 ----------
    A：晚上 8 點後還沒練 → 畫面變暗、大聲吼兩次、抖動
@@ -617,7 +839,14 @@ function burst(x, y, set = ['⭐', '🌟', '💖', '✨', '🫧']) {
   setTimeout(() => b.remove(), 1200);
 }
 function burstAt(el, set) { const r = el.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, set); }
-function wiggle(el) { el.classList.remove('wiggle'); void el.offsetWidth; el.classList.add('wiggle'); }
+function wiggle(el) { el.classList.remove('wiggle', 'jelly'); void el.offsetWidth; el.classList.add('wiggle'); }
+// 軟Q手感：碰到的按鈕都會壓扁再彈回來
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest && e.target.closest('.btn, .choice, .tile, .chip, .icon-btn, .node, .item, .tab, .mic, .unit');
+  if (!b || b.classList.contains('wiggle')) return;
+  b.classList.remove('jelly'); void b.offsetWidth; b.classList.add('jelly');
+  b.addEventListener('animationend', () => b.classList.remove('jelly'), { once: true });
+}, true);
 const CHEERS = ['好棒！', '太厲害了！', '答對了！', '陽寶好聰明！', '完全正確！', '小羊為你鼓掌！'];
 const SOFTS = ['差一點點，再想想～', '沒關係，再試一次！', '慢慢來，你可以的！'];
 
@@ -651,24 +880,37 @@ function nextNewBatch() {
   return left.slice(0, n);
 }
 
-function startSession() {
+function startSession(mode = 'normal') {
   sfx.tap();
   clearInterval(homeTimer); idleAt = Date.now();
   ses = {
-    sid: uid(), start: Date.now(), elapsed: 0, last: Date.now(), timeUp: false,
-    queue: [], res: {}, newIds: [], reviewIds: [], stars: 0, cur: null,
+    sid: uid(), mode, start: Date.now(), elapsed: 0, last: Date.now(), timeUp: false,
+    queue: [], res: {}, newIds: [], reviewIds: [], stars: 0, cur: null, doneQ: 0, total: 0,
   };
-  const due = dueList().slice(0, MAX_REVIEW);
-  ses.reviewIds = due;
-  for (const id of due) {
-    ses.res[id] = { first: true, review: true };
-    const w = BY_ID[id];
-    ses.queue.push({ t: pick(w.sp ? ['meaning', 'spell', 'spell', 'sentMean'] : ['meaning', 'listen', 'sentMean']), w });
+  if (mode === 'rescue') {
+    // 救援站：每個字考「選意思」和「拼字（或聽音選字）」，兩題都一次答對才算救出來
+    const ids = rescueList().slice(0, MAX_RESCUE), qs = [];
+    for (const id of ids) {
+      ses.res[id] = { first: true, review: true };
+      const w = BY_ID[id];
+      qs.push({ t: 'meaning', w }, { t: w.sp ? 'spell' : 'listen', w });
+    }
+    ses.reviewIds = ids; ses.total = qs.length;
+    ses.queue = [{ t: 'note', text: `救援出發！有 <b>${ids.length}</b> 隻小動物在等你，答對就能救出來！`, mood: 'cheer' }, ...shuffle(qs)];
+    logEvent({ type: 'start', sid: ses.sid, kind: 'rescue', review: ids.length });
+  } else {
+    const due = dueList().slice(0, MAX_REVIEW);
+    ses.reviewIds = due;
+    for (const id of due) {
+      ses.res[id] = { first: true, review: true };
+      const w = BY_ID[id];
+      ses.queue.push({ t: pick(w.sp ? ['meaning', 'spell', 'spell', 'sentMean'] : ['meaning', 'listen', 'sentMean']), w });
+    }
+    ses.queue = shuffle(ses.queue);
+    if (ses.queue.length) ses.queue.unshift({ t: 'note', text: `先來複習 <b>${due.length}</b> 個以前學過的字！`, mood: 'smile' });
+    addNewBatch();
+    logEvent({ type: 'start', sid: ses.sid, review: due.length });
   }
-  ses.queue = shuffle(ses.queue);
-  if (ses.queue.length) ses.queue.unshift({ t: 'note', text: `先來複習 <b>${due.length}</b> 個以前學過的字！`, mood: 'smile' });
-  addNewBatch();
-  logEvent({ type: 'start', sid: ses.sid, review: due.length });
   clearInterval(timerId);
   timerId = setInterval(tick, 1000);
   next();
@@ -695,22 +937,42 @@ function tick() {
   if (!ses || document.hidden) { if (ses) ses.last = Date.now(); return; }
   const now = Date.now(); ses.elapsed += now - ses.last; ses.last = now;
   if (now - idleAt > IDLE_MS) { idleAt = now; showIdleTiger(); }
-  const p = Math.min(1, ses.elapsed / (SESSION_MIN * 60000));
+  // 救援站不計時，河流條改成顯示救援進度
+  const rescue = ses.mode === 'rescue';
+  const p = rescue ? Math.min(1, ses.doneQ / (ses.total || 1)) : Math.min(1, ses.elapsed / (SESSION_MIN * 60000));
   const fill = document.querySelector('.river-fill'), ot = document.querySelector('.river-lamb');
   if (fill) fill.style.width = `calc(${p * 100}% - ${p * 6}px)`;
   if (ot) ot.style.left = (p * 100) + '%';
-  if (p >= 1 && !ses.timeUp) {
+  if (!rescue && p >= 1 && !ses.timeUp) {
     ses.timeUp = true;
     const b = h('<div class="banner">⏰ 時間到囉！做完這一題就休息～</div>');
     document.body.appendChild(b); setTimeout(() => b.remove(), 3500);
   }
+  const k = Math.floor(ses.elapsed / 5000);
+  if (k !== ses.kept) { ses.kept = k; keep(); }
 }
-document.addEventListener('visibilitychange', () => { idleAt = Date.now(); if (ses) ses.last = Date.now(); });
+document.addEventListener('visibilitychange', () => { idleAt = Date.now(); if (ses) ses.last = Date.now(); if (document.hidden) keep(); });
+window.addEventListener('pagehide', keep);
+// 練到一半就關掉：把目前進度先存起來，下次打開時補記（學過的字不會白練）
+function keep() {
+  if (!ses) return;
+  const { sid, mode, start, elapsed, timeUp, res, newIds, reviewIds, stars } = ses;
+  S.pending = { sid, mode, start, elapsed, timeUp, res, newIds, reviewIds, stars, partial: true };
+  save();
+}
 
 function markMiss(w) { if (ses.res[w.id]) ses.res[w.id].first = false; }
-function gainStar(n = 1) { ses.stars += n; S.stars += n; save(); const c = document.querySelector('.star-count b'); if (c) { c.textContent = S.stars; c.parentElement.classList.remove('pop'); void c.offsetWidth; c.parentElement.classList.add('pop'); } }
+function gainStar(n = 1) {
+  ses.stars += n; S.stars += n; save();
+  const c = document.querySelector('.star-count b');
+  if (c) { c.textContent = S.stars; c.parentElement.classList.remove('pop'); void c.offsetWidth; c.parentElement.classList.add('pop'); }
+  // 頂列的小羊翻一圈
+  const rl = document.querySelector('.river-lamb');
+  if (rl) { rl.classList.remove('hop'); void rl.offsetWidth; rl.classList.add('hop'); }
+}
 function answerLog(step, ok, tries, extra = {}) {
   if (ses.res[step.w.id]) ses.res[step.w.id].quizzed = true;
+  ses.doneQ++; keep();
   logEvent(Object.assign({ type: 'answer', sid: ses.sid, id: step.w.id, w: step.w.w, u: step.w.u, task: step.t, first: ok, tries }, extra));
 }
 
@@ -719,7 +981,7 @@ function next() {
   if (ses.timeUp && ses.cur && ses.cur.t !== 'note') return finish();
   const step = ses.queue.shift();
   ses.cur = step;
-  if (!step) return finish();
+  if (!step) { ses.allDone = ses.mode !== 'rescue'; return finish(); }
   if (step.t === 'retry') {
     // 這批答錯過的字，再考一次
     const miss = step.ids.filter(id => !ses.res[id].first);
@@ -732,7 +994,7 @@ function next() {
   if (step.t === 'more') {
     if (ses.timeUp) return finish();
     if (ses.elapsed > (SESSION_MIN - 3) * 60000) return finish();
-    if (!addNewBatch()) return finish();
+    if (!addNewBatch()) { ses.allDone = true; return finish(); }
     return next();
   }
   ({ note: viewNote, intro: viewIntro, meaning: viewMeaning, listen: viewListen, spell: viewSpell, sentMean: viewSentMean, order: viewOrder, saySent: viewSaySent }[step.t])(step);
@@ -746,7 +1008,12 @@ function frame(inner) {
     <div class="river" aria-label="練習時間"><div class="river-fill"></div><div class="river-lamb">${lamb('smile')}</div></div>
     <div class="star-count"><span class="emo">⭐</span><b>${S.stars}</b></div>
   </div>`);
-  top.querySelector('#home').onclick = () => { sfx.tap(); if (ses) finish(); else home(); };
+  top.querySelector('#home').onclick = () => {
+    sfx.tap();
+    if (!ses) return home();
+    if (ses.mode === 'rescue' || ses.elapsed >= COUNT_MIN * 60000 || S.days.includes(today())) return finish();
+    askQuit();   // 還沒練滿就想跑：先問一下，不然老虎媽媽一下就被躲掉了
+  };
   $app.appendChild(top);
   const card = h(`<section class="card">${inner}</section>`);
   $app.appendChild(card);
@@ -781,7 +1048,7 @@ function viewNote(step) {
 
 function viewIntro(step) {
   const w = step.w;
-  ses.res[w.id].shown = true;
+  ses.res[w.id].shown = true; keep();
   const card = frame(`
     <div class="prompt"><span class="tag">新朋友</span> 聽一聽、唸一唸</div>
     <div class="emoji-big">${w.e}</div>
@@ -1079,48 +1346,244 @@ function viewSaySent(step) {
 }
 
 /* ---------- 結束與存檔 ---------- */
-function finish() {
-  clearInterval(timerId);
-  const s = ses; ses = null;
-  if (!s) return home();
+// 把一次練習的結果記進進度（正常結束、或下次打開時補記練到一半的那次，都走這裡）
+function settle(s) {
+  const out = { learned: [], newBadges: [], counted: false, grew: [], chest: 0, rescued: [] };
+  if (s.mode === 'rescue') {
+    for (const [id, r] of Object.entries(s.res)) {
+      const old = S.words[id];
+      if (!old || !r.quizzed || !r.first) continue;
+      old.rescued = old.miss || 0;
+      S.friends = (S.friends || 0) + 1;
+      out.rescued.push(id);
+    }
+    logEvent({ type: 'rescue', sid: s.sid, tries: Object.keys(s.res).length, got: out.rescued.map(id => BY_ID[id].w).join(' ') });
+    return out;
+  }
   const t = today();
-  const learned = [];
   for (const [id, r] of Object.entries(s.res)) {
     const old = S.words[id];
     if (!r.review) {
       if (!r.shown) continue;                       // 時間到還沒見到的新字，下次再學
       const box = r.quizzed && r.first ? 2 : 1;     // 只看過沒考到的，明天就複習
       S.words[id] = { box, due: addDays(INTERVAL[box]), seen: 1, miss: r.first ? 0 : 1, first: t };
-      learned.push(id);
+      out.learned.push(id);
     } else if (old && r.quizzed) {
       const box = r.first ? Math.min(6, old.box + 1) : 1;
       S.words[id] = Object.assign(old, { box, due: addDays(INTERVAL[box]), seen: (old.seen || 0) + 1, miss: (old.miss || 0) + (r.first ? 0 : 1) });
     }
   }
-  const newBadges = [];
-  for (const u of UNITS) if (!S.badges.includes(u) && unitLeft(u).length === 0) { S.badges.push(u); newBadges.push(u); }
-  if (!S.days.includes(t)) S.days.push(t);
-  const minutes = Math.round(s.elapsed / 60000);
-  logEvent({ type: 'session', sid: s.sid, minutes, stars: s.stars, newIds: learned, reviewIds: s.reviewIds, badges: newBadges });
-  save(); flush();
+  for (const u of UNITS) if (!S.badges.includes(u) && unitLeft(u).length === 0) { S.badges.push(u); out.newBadges.push(u); }
+  // 練滿 COUNT_MIN 分鐘（或字全部學完）才算今天練過
+  const day = today(new Date(s.start));
+  out.counted = s.elapsed >= COUNT_MIN * 60000 || !!s.allDone;
+  if (out.counted && !S.days.includes(day)) {
+    const before = S.days.length;
+    S.days.push(day);
+    out.grew = ISLAND.filter(x => x[0] > before && x[0] <= S.days.length);
+    const st = streak();
+    if (MILESTONES.includes(st)) { S.chests.push('super'); out.chest = st; }
+  }
+  if (out.counted) S.lastStars = s.stars;
+  logEvent({ type: 'session', sid: s.sid, minutes: Math.round(s.elapsed / 60000), stars: s.stars, newIds: out.learned, reviewIds: s.reviewIds, badges: out.newBadges, counted: out.counted, partial: !!s.partial });
+  return out;
+}
 
+function finish() {
+  clearInterval(timerId);
+  const s = ses; ses = null;
+  if (!s) return home();
+  S.pending = null;
+  const prev = S.lastStars;
+  const r = settle(s);
+  save(); flush();
+  if (s.mode === 'rescue') return rescueResult(r);
+
+  const t = today(), minutes = Math.round(s.elapsed / 60000), st = streak();
+  const canBonus = r.counted && S.bonusOn !== t;
   $app.innerHTML = '';
   const card = h(`<section class="card">
-    <div class="hero">${lamb('cheer')}<h1>今天好棒，${NAME}！</h1></div>
+    <div class="hero">${lamb(r.counted ? 'cheer' : 'smile')}<h1>${r.counted ? `今天好棒，${NAME}！` : `休息一下，${NAME}～`}</h1></div>
     <div class="result-stats">
       <div class="stat"><b>${s.stars}</b>得到星星</div>
-      <div class="stat"><b>${learned.length}</b>新朋友</div>
+      <div class="stat"><b>${r.learned.length}</b>新朋友</div>
       <div class="stat"><b>${s.reviewIds.length}</b>複習</div>
       <div class="stat"><b>${minutes}</b>分鐘</div>
     </div>
-    ${learned.length ? `<div class="learned">${learned.map(id => `<span><i class="emo">${BY_ID[id].e}</i> ${esc(BY_ID[id].w)}</span>`).join('')}</div>` : ''}
-    ${lateShownOn === t ? `<div class="buddy">${tiger('happy')}<div class="bubble">這才乖！明天早一點練喔～</div></div>` : ''}
-    ${newBadges.length ? `<div>${buddy(`拿到新貼紙：${newBadges.map(u => `<span class="emo" style="font-size:36px">${unitWords(u)[0].e}</span> <b class="en">NCL4-${u}</b>`).join('、')}`, 'wow')}</div>` : ''}
-    <button class="btn big" id="ok">明天見！<span class="emo">👋</span></button>
+    ${r.counted && prev != null && s.stars > prev ? `<div class="pill">比上次多 <b>${s.stars - prev}</b> 顆星 <span class="emo">⬆️</span></div>` : ''}
+    ${r.learned.length ? `<div class="learned">${r.learned.map(id => `<span><i class="emo">${BY_ID[id].e}</i> ${esc(BY_ID[id].w)}</span>`).join('')}</div>` : ''}
+    ${r.counted ? '' : buddy(`今天練了 ${minutes} 分鐘，要練滿 <b>${COUNT_MIN}</b> 分鐘才算數喔！<br>等一下再回來，把今天的份練完～`, 'think')}
+    ${r.grew.length ? `<div class="island-box">${islandSvg()}</div>${buddy(`小島長出了 ${r.grew.map(x => `<span class="emo">${x[1]}</span> ${x[2]}`).join('、')}！`, 'wow')}` : ''}
+    ${r.counted ? `<div class="pill"><span class="emo">🔥</span> 連續練習 <b>${st}</b> 天</div>` : ''}
+    ${r.chest ? buddy(`連續 <b>${r.chest}</b> 天！老虎媽媽送你一個<b>超稀有寶箱</b>！`, 'wow') : ''}
+    ${lateShownOn === t && r.counted ? `<div class="buddy">${tiger('happy')}<div class="bubble">這才乖！明天早一點練喔～</div></div>` : ''}
+    ${r.newBadges.length ? `<div>${buddy(`拿到新貼紙：${r.newBadges.map(u => `<span class="emo" style="font-size:36px">${unitWords(u)[0].e}</span> <b class="en">NCL4-${u}</b>`).join('、')}`, 'wow')}</div>` : ''}
+    <div class="home-actions" id="acts"></div>
+  </section>`);
+  const acts = card.querySelector('#acts');
+  if (canBonus) {
+    const b = h(`<button class="btn big butter">獎勵關 <span class="emo">🏃</span></button>`);
+    b.onclick = () => { sfx.tap(); bonusRun(r.learned.concat(s.reviewIds)); };
+    acts.appendChild(b);
+  }
+  if (S.chests.length) {
+    const b = h(`<button class="btn mint">打開寶箱 <span class="emo">🎁</span></button>`);
+    b.onclick = () => { sfx.tap(); openChest(null, finishAgain); };
+    acts.appendChild(b);
+  }
+  const ok = h(`<button class="btn ${canBonus ? 'soft' : 'big'}">${r.counted ? '明天見！' : '回首頁'}<span class="emo">👋</span></button>`);
+  ok.onclick = () => { sfx.tap(); home(); };
+  acts.appendChild(ok);
+  // 寶箱開完回到這個畫面時，把寶箱按鈕拿掉
+  function finishAgain() { $app.innerHTML = ''; $app.appendChild(card); card.classList.add('still'); if (!S.chests.length) { const c = [...acts.children].find(x => x.textContent.includes('寶箱')); if (c) c.remove(); } }
+  $app.appendChild(card);
+  if (r.counted) { sfx.fanfare(); setTimeout(() => burst(innerWidth / 2, innerHeight / 3, ['🎉', '⭐', '💖', '🐑', '🌟', '🎈']), 150); }
+}
+
+// 還沒練滿就按回首頁
+function askQuit() {
+  const left = Math.max(1, Math.ceil((COUNT_MIN * 60000 - ses.elapsed) / 60000));
+  const m = h(`<div class="overlay"><section class="card">
+    ${buddy(`再練 <b>${left}</b> 分鐘就算數了！<br>現在休息的話，今天不算練過，小島也不會長大喔。`, 'think')}
+    <div class="row"><button class="btn mint" id="stay">繼續練 <span class="emo">💪</span></button><button class="btn soft small" id="leave">先休息</button></div>
+  </section></div>`);
+  document.body.appendChild(m);
+  m.querySelector('#stay').onclick = () => { sfx.tap(); m.remove(); };
+  m.querySelector('#leave').onclick = () => { sfx.tap(); m.remove(); finish(); };
+}
+
+/* ---------- 寶箱 ----------
+   kind = 'bonus'：獎勵關終點，開普通或稀有的；'super'：連續天數送的，開超稀有
+   kind = null：打開排隊中的寶箱 */
+function openChest(kind, after = home) {
+  if (!kind) { kind = S.chests.shift() || 'bonus'; save(); }
+  const pool = ITEMS.filter(x => !S.owned.includes(x.id) && (kind === 'super' ? x.r === 's' : !x.chest));
+  const item = pool.length ? pick(pool) : null;
+  const extra = kind === 'super' ? 30 : 15;   // 衣櫥都拿齊了就改送星星
+  const m = h(`<div class="overlay">
+    <div class="chest" role="button" aria-label="打開寶箱">🎁</div>
+    <div class="bubble">${kind === 'super' ? '超稀有寶箱！' : '寶箱！'}碰一下打開～</div>
+  </div>`);
+  document.body.appendChild(m);
+  let opened = false;
+  m.querySelector('.chest').onclick = () => {
+    if (opened) return;
+    opened = true; sfx.tap();
+    m.querySelector('.chest').classList.add('shake');
+    setTimeout(() => {
+      if (item) S.owned.push(item.id); else S.stars += extra;
+      save();
+      logEvent({ type: 'chest', kind, got: item ? item.id : 'stars+' + extra }); flush();
+      const close = () => { m.remove(); after(); };
+      m.innerHTML = '';
+      const c = h(`<section class="card">
+        ${item
+          ? `<div class="prize">${item.e}</div><span class="rar ${item.r}">${RARITY[item.r]}</span><h2 style="margin:0">${item.name}</h2>
+             <div class="wardrobe-lamb">${lamb('cheer', Object.assign({}, S.wear, { [item.slot]: item.id }))}</div>`
+          : `<div class="prize">⭐</div><h2 style="margin:0">得到 ${extra} 顆星星！</h2><div class="heard">衣櫥裡的東西都拿到了，好厲害！</div>`}
+        <div class="row" id="acts"></div>
+      </section>`);
+      const acts = c.querySelector('#acts');
+      if (item) {
+        const wearIt = h(`<button class="btn">穿上它！<span class="emo">✨</span></button>`);
+        wearIt.onclick = () => { sfx.tap(); S.wear[item.slot] = item.id; save(); close(); };
+        const keepIt = h(`<button class="btn soft small">先收進衣櫥</button>`);
+        keepIt.onclick = () => { sfx.tap(); close(); };
+        acts.append(wearIt, keepIt);
+      } else {
+        const ok = h(`<button class="btn">好耶！</button>`);
+        ok.onclick = () => { sfx.tap(); close(); };
+        acts.append(ok);
+      }
+      m.appendChild(c);
+      sfx.fanfare();
+      burst(innerWidth / 2, innerHeight / 3, kind === 'super' ? ['🌟', '💖', '🌈', '✨', '👑'] : undefined);
+    }, 1000);
+  };
+}
+
+/* ---------- 獎勵關：小羊跑酷 ----------
+   每天練滿才開一次。障礙物跑過來時出一題，選對意思小羊就跳過去，沒有失敗，跑到終點開寶箱 */
+function bonusRun(pool) {
+  S.bonusOn = today(); save();
+  let ids = [...new Set(pool)].filter(id => BY_ID[id]);
+  for (const id of shuffle(Object.keys(S.words))) { if (ids.length >= RUN_N) break; if (BY_ID[id] && !ids.includes(id)) ids.push(id); }
+  for (const w of shuffle(W)) { if (ids.length >= RUN_N) break; if (!ids.includes(w.id)) ids.push(w.id); }
+  ids = shuffle(ids).slice(0, RUN_N);
+  const OBS = ['🍄', '🪨', '🌵', '📦', '⛄'];
+  $app.innerHTML = '';
+  $app.appendChild(backBar('獎勵關'));
+  const card = h(`<section class="card">
+    <div class="prompt"><span class="tag">獎勵關</span> 答對就跳過去，跑到終點開寶箱！</div>
+    <div class="runner">
+      <span class="run-cloud" style="left:12%;top:16px">☁️</span><span class="run-cloud" style="left:64%;top:38px">☁️</span>
+      <div class="run-ground"></div>
+      <div class="run-lamb">${lamb('smile')}</div>
+      <div class="run-ob"></div>
+    </div>
+    <div class="dots" id="dots"></div>
+    <div class="run-q" id="q"></div>
   </section>`);
   $app.appendChild(card);
-  card.querySelector('#ok').onclick = () => { sfx.tap(); home(); };
-  sfx.fanfare(); setTimeout(() => burst(innerWidth / 2, innerHeight / 3, ['🎉', '⭐', '💖', '🦦', '🌟', '🎈']), 150);
+  const runner = card.querySelector('.runner'), ob = card.querySelector('.run-ob'), lambEl = card.querySelector('.run-lamb');
+  const q = card.querySelector('#q'), dots = card.querySelector('#dots');
+  let k = 0, firsts = 0;
+  const alive = () => document.body.contains(card);   // 中途按回首頁就停
+  function approach(e, stopAt, then) {
+    ob.style.transition = 'none'; ob.style.left = '105%'; ob.textContent = e; void ob.offsetWidth;
+    runner.classList.add('running');
+    ob.style.transition = 'left 1.5s linear'; ob.style.left = stopAt;
+    setTimeout(() => { if (!alive()) return; runner.classList.remove('running'); then(); }, 1500);
+  }
+  function step() {
+    dots.textContent = ids.map((_, i) => i < k ? '⭐' : i === k ? '🐑' : '⚪').join('');
+    if (k >= ids.length) return goal();
+    approach(OBS[k % OBS.length], '42%', ask);
+  }
+  function ask() {
+    const w = BY_ID[ids[k]];
+    q.innerHTML = `<div class="row"><div class="word" style="font-size:clamp(36px,7vw,56px)">${esc(w.w)}</div>
+      <button class="icon-btn" id="sp" aria-label="聽發音"><span class="emo">🔊</span></button></div>
+      <div class="choices"></div><div class="heard" id="msg">選對意思，小羊就會跳起來！</div>`;
+    q.querySelector('#sp').onclick = () => say(w.w);
+    say(w.w);
+    const box = q.querySelector('.choices');
+    let tries = 0, done = false;
+    for (const o of shuffle([w.g, distractors(w, 1, 'g')[0]])) {
+      const b = h(`<button class="choice">${esc(o)}</button>`);
+      b.onclick = () => {
+        if (done) return;
+        tries++;
+        if (o === w.g) {
+          done = true; b.classList.add('right'); sfx.yay();
+          if (tries === 1) { firsts++; S.stars++; save(); }
+          jump();
+        } else {
+          sfx.soft(); wiggle(b); b.classList.add('tried');
+          [...box.children].find(x => x !== b).classList.add('glow');
+          q.querySelector('#msg').textContent = '答案在發亮的地方喔！';
+        }
+      };
+      box.appendChild(b);
+    }
+  }
+  function jump() {
+    lambEl.classList.remove('jump'); void lambEl.offsetWidth; lambEl.classList.add('jump');
+    runner.classList.add('running');
+    ob.style.transition = 'left .9s linear'; ob.style.left = '-20%';
+    setTimeout(() => { if (!alive()) return; lambEl.classList.remove('jump'); k++; q.innerHTML = ''; step(); }, 950);
+  }
+  function goal() {
+    approach('🏁', '58%', () => {
+      sfx.fanfare(); burstAt(runner, ['🎉', '⭐', '🏁', '💖']);
+      logEvent({ type: 'bonus', first: firsts, tries: ids.length, stars: firsts }); flush();
+      q.innerHTML = buddy(`跑到終點了！一次答對 <b>${firsts}</b> 題，得到 <span class="emo">⭐</span> ${firsts}！`, 'cheer');
+      const b = h(`<button class="btn big butter">打開寶箱 <span class="emo">🎁</span></button>`);
+      b.onclick = () => { sfx.tap(); openChest('bonus', home); };
+      q.appendChild(b);
+    });
+  }
+  step();
 }
 
 /* ---------- 首頁、單元、貼紙簿 ---------- */
@@ -1131,17 +1594,25 @@ function home() {
   const left = u == null ? 0 : unitLeft(u).length;
   const hour = new Date().getHours();
   const hi = hour < 11 ? '早安' : hour < 18 ? '午安' : '晚安';
+  const st = streak(), nx = nextGrow(), resc = rescueList().length, doneToday = S.days.includes(today());
   $app.innerHTML = '';
   const card = h(`<section class="card">
-    <div class="hero">${lamb('smile')}<h1>${hi}，${NAME}！</h1>
-      <div style="color:var(--ink-soft)">今天也一起玩 15 分鐘英文吧</div></div>
+    <h1 class="hello">${hi}，${NAME}！</h1>
+    <button class="island-box compact" id="isle" aria-label="我的小島">${islandSvg()}</button>
+    <div class="chips">
+      <span class="pill"><span class="emo">🔥</span> ${st ? `連續 <b>${st}</b> 天` : '今天開始第 <b>1</b> 天！'}</span>
+      <span class="pill">${doneToday ? '今天練過了 <span class="emo">✅</span>' : !nx ? '小島蓋好了！' : nx[0] - S.days.length === 1 ? `今天練滿 ${COUNT_MIN} 分鐘，小島就會長出 <span class="emo">${nx[1]}</span>` : `再練 <b>${nx[0] - S.days.length}</b> 天，小島會長出 <span class="emo">${nx[1]}</span>`}</span>
+    </div>
     <div class="plan">
       <div class="plan-item"><span class="emo">🔁</span><div><b>${due ? `複習 ${Math.min(due, MAX_REVIEW)} 個字` : '今天沒有要複習的字'}</b><span>${due ? '以前學過、今天要再見一次的字' : '很棒，先學新字！'}</span></div></div>
       <div class="plan-item"><span class="emo">🌱</span><div><b>${u == null ? '全部學完了！' : `新單元 <span class="en">NCL4-${u}</span>`}</b><span>${u == null ? '多複習就好' : `還有 ${left} 個新字`}</span></div></div>
     </div>
     <button class="btn big" id="go">開始練習 <span class="emo">🚀</span></button>
+    ${S.chests.length ? `<button class="btn mint" id="chest">打開寶箱 <span class="emo">🎁</span> × ${S.chests.length}</button>` : ''}
     <div class="home-actions">
-      <button class="btn soft small" id="units"><span class="emo">🗺️</span> 換單元</button>
+      <button class="btn soft small" id="units"><span class="emo">🗺️</span> 闖關地圖</button>
+      <button class="btn soft small" id="shop"><span class="emo">👗</span> 小羊衣櫥</button>
+      <button class="btn soft small" id="rescue"><span class="emo">🚑</span> 救援站${resc ? ` <b class="en">${resc}</b>` : ''}</button>
       <button class="btn soft small" id="book"><span class="emo">📒</span> 貼紙簿 ${S.badges.length}/${UNITS.length}</button>
     </div>
     <div class="meta-row"><span><i class="emo">⭐</i> 星星 ${S.stars}</span><span><i class="emo">📅</i> 練習了 ${S.days.length} 天</span><span><i class="emo">📚</i> 學過 ${Object.keys(S.words).length} / ${W.length} 個字</span></div>
@@ -1151,6 +1622,11 @@ function home() {
   card.querySelector('#go').onclick = () => { pickVoice(); startSession(); };
   card.querySelector('#units').onclick = () => { sfx.tap(); unitsView(); };
   card.querySelector('#book').onclick = () => { sfx.tap(); bookView(); };
+  card.querySelector('#shop').onclick = () => { sfx.tap(); shopSlot = 'head'; tryOn = null; shopView(); };
+  card.querySelector('#rescue').onclick = () => { sfx.tap(); rescueView(); };
+  card.querySelector('#isle').onclick = () => { sfx.tap(); islandView(); };
+  const ch = card.querySelector('#chest');
+  if (ch) ch.onclick = () => { sfx.tap(); openChest(null, home); };
   flush();
   // 8 點後還沒練：一打開就吼；停在首頁跨過 8 點也會吼
   if (isLate()) showLateTiger();
@@ -1164,20 +1640,139 @@ function backBar(title) {
   top.querySelector('#back').onclick = () => { sfx.tap(); home(); };
   return top;
 }
+// 闖關地圖：每 10 個單元一座島，一排 5 關、來回蛇行
+const ISLES = [['🍓', '草莓島'], ['🍬', '糖果島'], ['☁️', '雲朵島'], ['🐚', '貝殼島'], ['🌲', '森林島'],
+  ['🍩', '甜甜圈島'], ['❄️', '冰雪島'], ['🌙', '月亮島'], ['⭐', '星星島'], ['🌈', '彩虹島']];
 function unitsView() {
   $app.innerHTML = '';
-  $app.appendChild(backBar('選一個單元'));
+  $app.appendChild(backBar('闖關地圖'));
   const cur = nextUnit(S.curUnit);
-  const card = h(`<section class="card"><div class="heard">點一下，下次練習就從這個單元開始學新字</div><div class="grid"></div></section>`);
-  const g = card.querySelector('.grid');
-  for (const u of UNITS) {
-    const all = unitWords(u).length, done = all - unitLeft(u).length;
-    const b = h(`<button class="unit ${u === cur ? 'cur' : ''} ${done === all ? 'done' : ''}">
-      <span class="emo" style="font-size:30px">${unitWords(u)[0].e}</span><span class="num">${u}</span><span class="sub">${done}/${all}</span></button>`);
-    b.onclick = () => { if (done === all) { wiggle(b); return; } sfx.tap(); S.curUnit = u; save(); home(); };
-    g.appendChild(b);
+  const card = h(`<section class="card"><div class="heard">點一個關卡，下次練習就從這一關開始學新字</div></section>`);
+  for (let g = 0; g * 10 < UNITS.length; g++) {
+    const us = UNITS.slice(g * 10, g * 10 + 10);
+    const [e, name] = ISLES[g % ISLES.length];
+    const doneN = us.filter(u => unitLeft(u).length === 0).length;
+    const sec = h(`<div class="isle"><div class="isle-head"><span class="emo">${e}</span><b>${name}</b><span class="sub">${doneN}/${us.length} 關</span></div></div>`);
+    for (let r = 0; r < us.length; r += 5) {
+      const row = h(`<div class="map-row ${(r / 5) % 2 ? 'rev' : ''}"></div>`);
+      for (const u of us.slice(r, r + 5)) {
+        const all = unitWords(u).length, done = all - unitLeft(u).length;
+        const b = h(`<button class="node ${u === cur ? 'cur' : ''} ${done === all ? 'done' : ''}" aria-label="第 ${u} 關">
+          ${u === cur ? `<span class="node-lamb">${lamb('smile')}</span>` : ''}${done === all ? '<span class="flag emo">🚩</span>' : ''}
+          <span class="emo">${unitWords(u)[0].e}</span><span class="num">${u}</span><span class="sub">${done}/${all}</span></button>`);
+        b.onclick = () => { if (done === all) { wiggle(b); return; } sfx.tap(); S.curUnit = u; save(); home(); };
+        row.appendChild(b);
+      }
+      sec.appendChild(row);
+    }
+    card.appendChild(sec);
   }
   $app.appendChild(card);
+  const c = card.querySelector('.node.cur');
+  if (c) setTimeout(() => c.scrollIntoView({ block: 'center', behavior: 'smooth' }), 400);
+}
+
+// 小羊的衣櫥：點沒有的東西可以先試穿，星星夠就能買
+let shopSlot = 'head', tryOn = null, shopMsg = '';
+function shopView(again) {
+  $app.innerHTML = '';
+  $app.appendChild(backBar('小羊的衣櫥'));
+  const t = tryOn && ITEM[tryOn];
+  const wear = t ? Object.assign({}, S.wear, { [t.slot]: t.id }) : S.wear;
+  const card = h(`<section class="card ${again ? 'still' : ''}">
+    <div class="wardrobe-lamb">${lamb(t ? 'wow' : 'smile', wear)}</div>
+    <div class="star-count"><span class="emo">⭐</span><b>${S.stars}</b></div>
+    <div class="tabs">${SLOTS.map(([k, n]) => `<button class="tab ${k === shopSlot ? 'on' : ''}" data-k="${k}">${n}</button>`).join('')}</div>
+    <div class="items"></div>
+    <div class="heard" id="msg">${shopMsg || '點一下就能試穿，用星星買下來！'}</div>
+    <div class="row" id="buy"></div>
+  </section>`);
+  shopMsg = '';
+  card.querySelectorAll('.tab').forEach(b => b.onclick = () => { sfx.tap(); shopSlot = b.dataset.k; tryOn = null; shopView(true); });
+  const box = card.querySelector('.items');
+  for (const x of ITEMS.filter(x => x.slot === shopSlot)) {
+    const own = S.owned.includes(x.id), worn = S.wear[x.slot] === x.id;
+    const state = own ? (worn ? '穿著中 ✓' : '穿上') : x.chest ? '🎁 寶箱限定' : `⭐ ${x.price}`;
+    const b = h(`<button class="item ${worn ? 'worn' : ''} ${tryOn === x.id ? 'trying' : ''}">
+      <span class="ie">${x.e}</span><b>${x.name}</b><span class="rar ${x.r}">${RARITY[x.r]}</span><span class="state">${state}</span></button>`);
+    b.onclick = () => {
+      sfx.tap();
+      if (own) { S.wear[x.slot] = worn ? null : x.id; tryOn = null; save(); }
+      else {
+        tryOn = x.id;
+        shopMsg = x.chest ? '這個要開寶箱才拿得到喔！練習完玩獎勵關，或連續練習就有機會～'
+          : S.stars >= x.price ? `試穿中！喜歡就買下來～` : `還差 <b>${x.price - S.stars}</b> 顆星，多練習就買得到！`;
+      }
+      shopView(true);
+    };
+    box.appendChild(b);
+  }
+  if (t && !t.chest && S.stars >= t.price) {
+    const b = h(`<button class="btn butter">買下 <span class="emo">⭐</span> ${t.price}</button>`);
+    b.onclick = () => {
+      S.stars -= t.price; S.owned.push(t.id); S.wear[t.slot] = t.id; tryOn = null; save();
+      logEvent({ type: 'shop', got: t.id, tries: t.price });
+      sfx.fanfare(); shopMsg = `買到了 <b>${t.name}</b>！`;
+      shopView(true); burstAt(document.querySelector('.wardrobe-lamb'));
+    };
+    card.querySelector('#buy').appendChild(b);
+  }
+  $app.appendChild(card);
+}
+
+function islandView() {
+  $app.innerHTML = '';
+  $app.appendChild(backBar('我的小島'));
+  const days = S.days.length;
+  const have = ISLAND.filter(x => x[0] <= days), soon = ISLAND.filter(x => x[0] > days).slice(0, 3);
+  const pets = FRIENDS.slice(0, Math.min(S.friends || 0, FRIENDS.length));
+  const card = h(`<section class="card">
+    <div class="island-box">${islandSvg()}</div>
+    ${buddy(days ? `小島已經蓋了 <b>${days}</b> 天！每天練滿 ${COUNT_MIN} 分鐘，小島就會慢慢長出新東西。` : `今天練滿 ${COUNT_MIN} 分鐘，小島就會開始長草喔！`, 'smile')}
+    ${have.length ? `<div class="learned">${have.map(x => `<span><i class="emo">${x[1]}</i> ${x[2]}</span>`).join('')}</div>` : ''}
+    ${soon.length ? `<div class="heard">接下來：${soon.map(x => `第 <b class="en">${x[0]}</b> 天 <span class="emo">❓</span>`).join('　')}</div>` : ''}
+    <div class="heard">${pets.length ? `住在島上的小動物：<span class="friends">${pets.join('')}</span>` : '去救援站救小動物，牠們會搬來小島住！'}</div>
+  </section>`);
+  $app.appendChild(card);
+}
+
+function rescueView() {
+  $app.innerHTML = '';
+  $app.appendChild(backBar('救援站'));
+  const list = rescueList();
+  const pets = FRIENDS.slice(0, Math.min(S.friends || 0, FRIENDS.length));
+  const card = h(`<section class="card">
+    ${list.length
+      ? buddy(`有 <b>${list.length}</b> 個比較難的字，小動物被困在裡面了！<br>每個字考兩題，兩題都一次答對，就能救出一隻小動物，牠會搬到你的小島上。`, 'think')
+      : buddy('現在沒有需要救援的字，太厲害了！<br>練習時答錯過的字會跑來這裡。', 'cheer')}
+    ${list.length ? `<div class="cages">${list.slice(0, MAX_RESCUE).map(id => `<div class="cage"><span class="emo">🔒</span><b class="en">${esc(BY_ID[id].w)}</b></div>`).join('')}</div>` : ''}
+    <div class="heard">${pets.length ? `已經救出：<span class="friends">${pets.join('')}</span>` : '還沒有救出小動物'}</div>
+  </section>`);
+  if (list.length) {
+    const b = h(`<button class="btn big">出發救援 <span class="emo">🚑</span></button>`);
+    b.onclick = () => { pickVoice(); startSession('rescue'); };
+    card.appendChild(b);
+  }
+  $app.appendChild(card);
+}
+function rescueResult(r) {
+  const n = r.rescued.length, total = S.friends || 0;
+  const pets = FRIENDS.slice(Math.max(0, total - n), Math.min(total, FRIENDS.length));
+  $app.innerHTML = '';
+  const card = h(`<section class="card">
+    <div class="hero">${lamb('cheer')}<h1>${n ? `救出 ${n} 隻小動物！` : '大家都很努力！'}</h1></div>
+    ${pets.length ? `<div class="friends" style="font-size:52px">${pets.join('')}</div>` : ''}
+    ${n ? `<div class="learned">${r.rescued.map(id => `<span><i class="emo">${BY_ID[id].e}</i> ${esc(BY_ID[id].w)}</span>`).join('')}</div>` : ''}
+    ${buddy(rescueList().length ? '還有小動物在等你，下次再來救牠們！' : '全部救出來了，好厲害！', 'smile')}
+    <div class="home-actions" id="acts"></div>
+  </section>`);
+  const go = h(`<button class="btn big">去小島看看 <span class="emo">🏝️</span></button>`);
+  go.onclick = () => { sfx.tap(); islandView(); };
+  const back = h(`<button class="btn soft">回首頁</button>`);
+  back.onclick = () => { sfx.tap(); home(); };
+  card.querySelector('#acts').append(go, back);
+  $app.appendChild(card);
+  if (n) { sfx.fanfare(); setTimeout(() => burst(innerWidth / 2, innerHeight / 3, pets.concat(['💖', '✨'])), 150); }
 }
 function bookView() {
   $app.innerHTML = '';
@@ -1194,6 +1789,8 @@ function bookView() {
 
 /* ---------- 開始 ---------- */
 restoreIfEmpty().then(() => {
+  // 上次練到一半就關掉：先把那次學過的字補記起來
+  if (S.pending) { const p = S.pending; S.pending = null; settle(p); save(); }
   home();
   // 大人試看用：網址加 #tiger 或 #idle
   if (location.hash === '#tiger') showLateTiger();
