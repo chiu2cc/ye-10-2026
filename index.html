@@ -442,12 +442,26 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
 
 /* ---------- 大師拼字：自己打字 ---------- */
 .kb { display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; }
-.kb-row { display: flex; gap: 6px; justify-content: center; }
+/* 鍵盤跟著卡片寬度縮放：三排各佔 100%／90%／70%，每顆鍵一樣大 */
+.kb-row { display: flex; gap: 6px; justify-content: center; width: 100%; max-width: 640px; }
+.kb-row.r1 { width: 90%; max-width: 576px; }
+.kb-row.r2 { width: 70%; max-width: 448px; }
+.kb-row.tools { width: auto; }
 .key {
-  width: min(8.6vw, 58px); height: 58px; border-radius: 14px; background: #fff; box-shadow: 0 4px 0 var(--line), inset 0 0 0 2px var(--line);
+  flex: 1 1 0; min-width: 0; height: 58px; padding: 0; border-radius: 14px; background: #fff; box-shadow: 0 4px 0 var(--line), inset 0 0 0 2px var(--line);
   font-family: var(--font-en); font-weight: 600; font-size: 26px;
 }
 .key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+/* 平板橫拿時畫面比較矮：大師拼字、字卡、魔王縮小一點，少捲一點 */
+@media (max-height: 860px) and (orientation: landscape) {
+  .emoji-big { font-size: 52px; }
+  .card { gap: 8px; }
+  .slot { width: 48px; height: 54px; font-size: 30px; }
+  .key { height: 46px; font-size: 22px; }
+  .kb { gap: 6px; }
+  .boss svg { width: 120px; height: 120px; }
+  .gloss { font-size: 26px; }
+}
 
 /* ---------- 小島：跟小羊說話、下雪 ---------- */
 .island-box.talkable { position: relative; }
@@ -1617,8 +1631,8 @@ function viewSpellMaster(step) {
       <button class="icon-btn" id="slow" aria-label="慢慢唸"><span class="emo">🐢</span></button>
     </div>
     <div class="slots">${word.split('').map(() => '<div class="slot"></div>').join('')}</div>
-    <div class="kb">${rows.map(r => `<div class="kb-row">${r.split('').map(c => `<button class="key" data-c="${c}">${c}</button>`).join('')}</div>`).join('')}
-      <div class="kb-row"><button class="btn soft small" id="bs">⌫ 退一格</button></div></div>
+    <div class="kb">${rows.map((r, i) => `<div class="kb-row r${i}">${r.split('').map(c => `<button class="key" data-c="${c}">${c}</button>`).join('')}</div>`).join('')}
+      <div class="kb-row tools"><button class="btn soft small" id="bs">⌫ 退一格</button></div></div>
     <div class="heard" id="msg"></div>
   `);
   const slots = [...card.querySelectorAll('.slot')], msg = card.querySelector('#msg');
