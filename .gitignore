@@ -1,0 +1,4 @@
+# 故事明文不進 repo（放在 chiu2cc/陽寶英語教材/stories.src.js），只推加密的 stories.enc.json
+stories.js
+stories.src.js
+*.pdf

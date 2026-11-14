@@ -11,7 +11,7 @@
 <title>陽寶的英文小島</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Color+Emoji&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=LXGW+WenKai+TC:wght@400;700&display=swap">
 <style>
 :root {
   --sky: #FFE9DC;        /* 蜜桃底 */
@@ -474,6 +474,31 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
 .flake { animation: fall linear infinite; }
 @keyframes fall { from { transform: translateY(-30px); } to { transform: translateY(290px); } }
 
+/* ---------- 故事屋 ---------- */
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; width: 100%; }
+.book {
+  border-radius: 22px; background: #fff; box-shadow: 0 5px 0 var(--line), inset 0 0 0 3px var(--line);
+  padding: 14px 16px; display: flex; gap: 14px; align-items: center; text-align: left;
+}
+.book > .emo { font-size: 46px; flex: none; }
+.book b { display: block; font-size: 21px; font-weight: 600; line-height: 1.25; }
+.book span { display: block; font-size: 17px; color: var(--ink-soft); }
+.book .state { font-size: 16px; margin-top: 2px; }
+.book.done { background: #FFF6D8; box-shadow: 0 5px 0 var(--butter-deep), inset 0 0 0 3px var(--butter); }
+.story { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 680px; text-align: left; }
+.sline {
+  font-size: clamp(22px, 3.6vw, 28px); line-height: 1.45; padding: 8px 14px; border-radius: 16px;
+  background: #fff; box-shadow: inset 0 0 0 3px var(--line); cursor: pointer; transition: background .2s;
+}
+.sline.sel { box-shadow: inset 0 0 0 3px var(--water-deep); }
+.sline.reading { background: #FFF6D8; box-shadow: inset 0 0 0 3px var(--butter); }
+.sline .szh { display: block; font-size: 19px; color: var(--ink-soft); margin-top: 2px; }
+.sline .szh[hidden] { display: none; }
+.pass { font: inherit; font-family: var(--font-en); font-size: 26px; width: min(100%, 360px); padding: 12px 18px; border: 0; border-radius: 18px;
+  background: #fff; box-shadow: inset 0 0 0 3px var(--line); color: var(--ink); text-align: center; user-select: text; -webkit-user-select: text; }
+.pass:focus { outline: none; box-shadow: inset 0 0 0 3px var(--water-deep); }
+.vw { background: linear-gradient(transparent 55%, #FFE07A 55%); color: inherit; padding: 0 2px; border-radius: 4px; cursor: pointer; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -492,7 +517,25 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
    - 進度存平板 localStorage，並送到 Google Apps Script（config.js）
    ========================================================= */
 const W = window.WORDS;
-const BY_ID = Object.fromEntries(W.map(x => [x.id, x]));
+// 故事屋：故事檔加密放在 stories.enc.json，輸入密碼解開後才裝進來（見 loadStories）
+let STORIES = [], STORY = {}, ALLW = W, BY_ID = Object.fromEntries(W.map(x => [x.id, x]));
+// 故事的生字：跟 Level 4 重複的字直接用同一個（own：意思不一樣就另外算）
+function installStories(list) {
+  const extra = [];
+  for (const st of list) {
+    st.ids = st.vocab.map((v, i) => {
+      const same = !v.own && W.find(x => x.w.toLowerCase() === v.w.toLowerCase());
+      if (same) return same.id;
+      const w = Object.assign({ id: `${st.id}-${i + 1}`, u: st.id }, v);
+      extra.push(w);
+      return w.id;
+    });
+  }
+  STORIES = list;
+  STORY = Object.fromEntries(list.map(x => [x.id, x]));
+  ALLW = W.concat(extra);
+  BY_ID = Object.fromEntries(ALLW.map(x => [x.id, x]));
+}
 const UNITS = [...new Set(W.map(x => x.u))];
 const SESSION_MIN = 15;
 const NEW_BATCH = 6;
@@ -514,7 +557,7 @@ const pick = a => a[rnd(a.length)];
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const today = (d = new Date()) => { const z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };
 const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return today(d); };
-const norm = s => s.toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim();
+const norm = s => s.toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const h = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
 
@@ -523,7 +566,7 @@ function blankState() {
   return {
     words: {}, stars: 0, badges: [], days: [], curUnit: UNITS[0], outbox: [], device: uid(),
     owned: ['bow'], wear: { head: 'bow' }, friends: 0, chests: [], bonusOn: '', lastStars: null,
-    bosses: [], coupons: [], msgSeen: '', daily: null, gifts: [],
+    bosses: [], coupons: [], msgSeen: '', daily: null, gifts: [], stories: {},
     syncLog: [],     // 最近 20 次送資料的結果，跟著進度一起上傳，查「為什麼沒送上來」用
     pending: null,   // 練到一半關掉時的進度，下次打開時補記
   };
@@ -540,6 +583,30 @@ function load() {
   return blankState();
 }
 function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- 解開故事檔 ----------
+   stories.enc.json：PBKDF2-SHA256 推出金鑰、AES-256-GCM 加密（產生方式見 chiu2cc/陽寶英語教材/encrypt_stories.js）
+   密碼只存在這台平板（不跟進度一起上傳） */
+const SK_KEY = LS_KEY + '-sk';
+let storyBox = null;   // 讀到的加密故事檔；null＝沒有故事屋
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function unlockStories(pass) {
+  if (!storyBox || !(window.crypto && crypto.subtle)) return false;
+  try {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(storyBox.salt), iterations: storyBox.iter, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(storyBox.iv) }, key, b64(storyBox.data));
+    installStories(JSON.parse(new TextDecoder().decode(plain)));
+    try { localStorage.setItem(SK_KEY, pass); } catch (e) {}
+    return true;
+  } catch (e) { return false; }   // 密碼錯
+}
+async function loadStories() {
+  try { const r = await fetch('stories.enc.json'); if (r.ok) storyBox = await r.json(); } catch (e) {}
+  let pass = null; try { pass = localStorage.getItem(SK_KEY); } catch (e) {}
+  if (storyBox && pass && !(await unlockStories(pass))) { try { localStorage.removeItem(SK_KEY); } catch (e) {} }   // 換過密碼：請大人重新輸入
+}
 
 /* ---------- 進度回傳 ---------- */
 // eid：每筆紀錄的編號，試算表端用來去掉重送的重複紀錄
@@ -596,9 +663,13 @@ async function restoreIfEmpty() {
 
 /* ---------- 聲音：唸英文 ---------- */
 let voice = null;
+// iPad／Mac 的英文聲音清單裡有 Bells、Bubbles、Zarvox 這類搞笑聲音，要跳過；優先挑美國腔、品質好的聲音
+const ODD_VOICE = /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|deranged|hysterical|junior|ralph|fred|kathy|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley/i;
 function pickVoice() {
-  const vs = speechSynthesis.getVoices().filter(v => /^en[-_]US/i.test(v.lang));
-  voice = vs.find(v => /google/i.test(v.name)) || vs[0] || null;
+  const vs = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang) && !ODD_VOICE.test(v.name));
+  const score = v => (/^en[-_]US/i.test(v.lang) ? 10 : 0) + (/premium|enhanced|neural|natural/i.test(v.name) ? 4 : 0)
+    + (/google/i.test(v.name) ? 3 : 0) + (/samantha|ava|allison|susan|zoe|nicky|aria|jenny/i.test(v.name) ? 2 : 0);
+  voice = vs.sort((a, b) => score(b) - score(a))[0] || null;
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 function say(text, slow) {
@@ -606,11 +677,11 @@ function say(text, slow) {
   return new Promise(res => {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US'; if (voice) u.voice = voice;
+    u.lang = voice ? voice.lang : 'en-US'; if (voice) u.voice = voice;
     u.rate = slow ? 0.6 : 0.88; u.pitch = 1.05;
     u.onend = u.onerror = () => res();
     speechSynthesis.speak(u);
-    setTimeout(res, 8000);
+    setTimeout(res, (3000 + text.length * 110) * (slow ? 1.5 : 1));   // 保險：沒收到唸完的通知也不會卡住（故事長句要等久一點）
   });
 }
 
@@ -1127,7 +1198,7 @@ function burstAt(el, set) { const r = el.getBoundingClientRect(); burst(r.left +
 function wiggle(el) { el.classList.remove('wiggle', 'jelly'); void el.offsetWidth; el.classList.add('wiggle'); }
 // 軟Q手感：碰到的按鈕都會壓扁再彈回來
 document.addEventListener('pointerdown', e => {
-  const b = e.target.closest && e.target.closest('.btn, .choice, .tile, .chip, .icon-btn, .node, .item, .tab, .mic, .unit, .dexcard, .coupon, .key');
+  const b = e.target.closest && e.target.closest('.btn, .choice, .tile, .chip, .icon-btn, .node, .item, .tab, .mic, .unit, .dexcard, .coupon, .key, .book');
   if (!b || b.classList.contains('wiggle')) return;
   b.classList.remove('jelly'); void b.offsetWidth; b.classList.add('jelly');
   b.addEventListener('animationend', () => b.classList.remove('jelly'), { once: true });
@@ -1187,16 +1258,10 @@ function startSession(mode = 'normal') {
     ses.queue = [{ t: 'note', text: `救援出發！有 <b>${ids.length}</b> 隻小動物在等你，答對就能救出來！`, mood: 'cheer' }, ...shuffle(qs)];
     logEvent({ type: 'start', sid: ses.sid, kind: 'rescue', review: ids.length });
   } else {
+    // 先複習到期的字，再學新字；之後新字、複習輪流排（見 next() 的 more）
     const due = dueList().slice(0, MAX_REVIEW);
-    ses.reviewIds = due;
-    for (const id of due) {
-      ses.res[id] = { first: true, review: true };
-      const w = BY_ID[id];
-      ses.queue.push({ t: pick(w.sp ? ['meaning', 'spell', 'spell', 'sentMean'] : ['meaning', 'listen', 'sentMean']), w });
-    }
-    ses.queue = shuffle(ses.queue);
-    if (ses.queue.length) ses.queue.unshift({ t: 'note', text: `先來複習 <b>${due.length}</b> 個以前學過的字！`, mood: 'smile' });
-    addNewBatch();
+    if (due.length) queueReview(due, `先來複習 <b>${due.length}</b> 個以前學過的字！`);
+    else ses.queue.push({ t: 'more' });
     logEvent({ type: 'start', sid: ses.sid, review: due.length });
   }
   clearInterval(timerId);
@@ -1213,9 +1278,9 @@ function addNewBatch() {
       ses.queue.push({ t: 'note', text: `<b>${ISLES[g % ISLES.length][1]}</b>的魔王「貪吃雲」出現了！<br>牠把字都吃掉了，打贏牠才能去下一座島！`, mood: 'wow' }, { t: 'boss', g }, { t: 'more' });
       return true;
     }
-    ses.queue.push({ t: 'note', text: '全部的字都學過了！我們來多複習幾個吧～', mood: 'cheer' });
     return false;
   }
+  ses.lastBatch = 'new';
   for (const w of batch) { ses.res[w.id] = { first: true, review: false }; ses.newIds.push(w.id); }
   const u = batch[0].u;
   ses.queue.push({ t: 'note', text: `新單元 <b class="en">NCL4-${u}</b>：認識 <b>${batch.length}</b> 個新朋友！`, mood: 'cheer' });
@@ -1230,17 +1295,47 @@ function addNewBatch() {
   return true;
 }
 
+// 排一批複習題，後面接 more，練習還有時間就繼續排下一批
+function queueReview(ids, text, extra) {
+  ses.lastBatch = 'review';
+  const qs = ids.map(id => {
+    ses.res[id] = { first: true, review: true, extra: !!extra };
+    ses.reviewIds.push(id);
+    const w = BY_ID[id];
+    return { t: pick(w.sp ? ['meaning', 'spell', 'spell', 'sentMean'] : ['meaning', 'listen', 'sentMean']), w };
+  });
+  ses.queue.push({ t: 'note', text, mood: extra ? 'cheer' : 'smile' }, ...shuffle(qs), { t: 'more' });
+}
+// 還沒排進這次練習的到期字（一次只排 MAX_REVIEW 個，所以要分批補，不然到期的字會越積越多）
+function addReviewBatch() {
+  const due = dueList().filter(id => !ses.res[id]).slice(0, MAX_REVIEW);
+  if (!due.length) return false;
+  queueReview(due, `再複習 <b>${due.length}</b> 個以前學過的字！`);
+  return true;
+}
+// 新字學完、也沒有到期的字：挑比較不熟的字多練。不算正式複習：答對不升盒子，答錯一樣回第 1 盒
+function addExtraBatch() {
+  const ids = Object.entries(S.words).filter(([id]) => BY_ID[id] && !ses.res[id])
+    .sort((a, b) => a[1].box - b[1].box || (b[1].miss || 0) - (a[1].miss || 0))
+    .slice(0, NEW_BATCH).map(([id]) => id);
+  if (!ids.length) return false;
+  queueReview(ids, '新字都學完了！我們挑幾個比較不熟的字多練練～', true);
+  return true;
+}
+
 function tick() {
   if (!ses || document.hidden) { if (ses) ses.last = Date.now(); return; }
   const now = Date.now(); ses.elapsed += now - ses.last; ses.last = now;
   if (now - idleAt > IDLE_MS) { idleAt = now; showIdleTiger(); }
   // 救援站不計時，河流條改成顯示救援進度
-  const rescue = ses.mode === 'rescue';
-  const p = rescue ? Math.min(1, ses.doneQ / (ses.total || 1)) : Math.min(1, ses.elapsed / (SESSION_MIN * 60000));
+  const rescue = ses.mode === 'rescue', story = ses.mode === 'story';
+  const p = rescue ? Math.min(1, ses.doneQ / (ses.total || 1))
+    : story ? 1 - ses.queue.filter(x => x.t !== 'note').length / (ses.total || 1)
+    : Math.min(1, ses.elapsed / (SESSION_MIN * 60000));
   const fill = document.querySelector('.river-fill'), ot = document.querySelector('.river-lamb');
   if (fill) fill.style.width = `calc(${p * 100}% - ${p * 6}px)`;
   if (ot) ot.style.left = (p * 100) + '%';
-  if (!rescue && p >= 1 && !ses.timeUp) {
+  if (!rescue && !story && p >= 1 && !ses.timeUp) {
     ses.timeUp = true;
     const b = h('<div class="banner">⏰ 時間到囉！做完這一題就休息～</div>');
     document.body.appendChild(b); setTimeout(() => b.remove(), 3500);
@@ -1280,7 +1375,7 @@ function next() {
   if (ses.timeUp && ses.cur && ses.cur.t !== 'note') return finish();
   const step = ses.queue.shift();
   ses.cur = step;
-  if (!step) { ses.allDone = ses.mode !== 'rescue'; return finish(); }
+  if (!step) { ses.allDone = ses.mode === 'normal'; return finish(); }
   if (step.t === 'retry') {
     // 這批答錯過的字，再考一次
     const miss = step.ids.filter(id => !ses.res[id].first);
@@ -1290,16 +1385,19 @@ function next() {
     }
     return next();
   }
+  if (step.t === 'storyEnd') { ses.storyDone = true; return finish(); }
   if (step.t === 'more') {
     if (ses.timeUp) return finish();
     if (ses.elapsed > (SESSION_MIN - 3) * 60000) return finish();
-    if (!addNewBatch()) { ses.allDone = true; return finish(); }
-    return next();
+    // 剛複習完就先學新字，剛學完新字就先補複習；都沒有了才挑不熟的字多練
+    const order = ses.lastBatch === 'review' ? [addNewBatch, addReviewBatch] : [addReviewBatch, addNewBatch];
+    if (order[0]() || order[1]() || addExtraBatch()) return next();
+    ses.allDone = true; return finish();
   }
   // 複習到很熟（第 4 盒以上）的字，拼字改成大師級：沒有字母磚，自己打
   const master = step.t === 'spell' && ses.mode !== 'rescue' && S.words[step.w.id] && S.words[step.w.id].box >= 4;
   ({ note: viewNote, intro: viewIntro, meaning: viewMeaning, listen: viewListen, spell: master ? viewSpellMaster : viewSpell,
-    sentMean: viewSentMean, order: viewOrder, saySent: viewSaySent, boss: viewBoss }[step.t])(step);
+    sentMean: viewSentMean, order: viewOrder, saySent: viewSaySent, boss: viewBoss, page: viewPage, storyQ: viewStoryQ }[step.t])(step);
 }
 
 /* ---------- 版面骨架 ---------- */
@@ -1324,7 +1422,7 @@ function frame(inner) {
 }
 function nextBtn(card, label = '下一題', cls = 'mint') {
   const b = h(`<button class="btn ${cls}" id="next">${label} <span class="emo">➜</span></button>`);
-  b.onclick = () => { sfx.tap(); next(); };
+  b.onclick = () => { sfx.tap(); if ('speechSynthesis' in window) speechSynthesis.cancel(); next(); };
   card.appendChild(b);
   return b;
 }
@@ -1429,7 +1527,7 @@ function wireSpeak(card, step, target, kind) {
 }
 
 function distractors(w, n, field) {
-  const near = W.filter(x => x.id !== w.id && x[field] !== w[field] && x.w.toLowerCase() !== w.w.toLowerCase());
+  const near = ALLW.filter(x => x.id !== w.id && x[field] !== w[field] && x.w.toLowerCase() !== w.w.toLowerCase());
   const same = shuffle(near.filter(x => Math.abs(x.u - w.u) <= 4));
   const far = shuffle(near);
   const out = [], seen = new Set([w[field]]);
@@ -1775,6 +1873,152 @@ function viewBoss(step) {
   round();
 }
 
+/* ---------- 故事屋 ----------
+   一本故事：先認識還沒學過的生字（跟平常一樣進間隔複習）→ 一頁一頁聽故事、跟著唸 → 回答問題
+   不計時，讀完一本才算讀完；第一次讀完送寶箱 */
+function startStory(id) {
+  const st = STORY[id];
+  if (!st) return home();
+  sfx.tap();
+  clearInterval(homeTimer); idleAt = Date.now();
+  ses = {
+    sid: uid(), mode: 'story', story: id, start: Date.now(), elapsed: 0, last: Date.now(), timeUp: false,
+    queue: [], res: {}, newIds: [], reviewIds: [], stars: 0, cur: null, doneQ: 0, total: 0,
+  };
+  const q = ses.queue, fresh = st.ids.filter(i => !S.words[i]).map(i => BY_ID[i]);
+  q.push({ t: 'note', mood: 'cheer', text: `今天的故事是 <b class="en">${esc(st.title)}</b>（${esc(st.zh)}）！`
+    + (fresh.length ? `<br>先認識故事裡的 <b>${fresh.length}</b> 個生字。` : '<br>生字都學過了，直接聽故事！') });
+  if (fresh.length) {
+    for (const w of fresh) { ses.res[w.id] = { first: true, review: false }; ses.newIds.push(w.id); }
+    fresh.forEach(w => q.push({ t: 'intro', w }));
+    q.push({ t: 'note', text: '記住了嗎？來考考看！', mood: 'smile' });
+    shuffle(fresh).forEach(w => q.push({ t: 'meaning', w }));
+    shuffle(fresh).forEach(w => q.push({ t: w.sp ? 'spell' : 'listen', w }));
+    q.push({ t: 'retry', ids: fresh.map(w => w.id) });
+  }
+  q.push({ t: 'note', mood: 'cheer', text: '故事時間到！小羊會一句一句唸給你聽。<br>點句子可以再聽一次，按 <span class="emo">🎤</span> 跟著唸那一句～' });
+  st.pages.forEach((_, i) => q.push({ t: 'page', st: id, i }));
+  q.push({ t: 'note', text: '故事聽完了！來回答幾個問題～', mood: 'smile' });
+  st.qs.forEach((_, i) => q.push({ t: 'storyQ', st: id, i }));
+  q.push({ t: 'storyEnd' });
+  ses.total = q.filter(x => x.t !== 'note').length;
+  logEvent({ type: 'start', sid: ses.sid, kind: 'story', got: id, review: 0 });
+  clearInterval(timerId);
+  timerId = setInterval(tick, 1000);
+  next();
+}
+// 句子裡的生字畫上底線，點了可以聽（stem：去掉最後一個字母，才對得到 cicadas、flattered 這類變化）
+function markVocab(s, vocab) {
+  const hits = [];
+  for (const w of vocab) {
+    for (const t of [w.w, w.alt].filter(Boolean).map(x => x.toLowerCase())) {
+      const stem = t.length > 4 ? t.slice(0, -1) : t;
+      const re = new RegExp(`\\b${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[a-z]*`, 'gi');
+      let m;
+      while ((m = re.exec(s))) {
+        const a = m.index, b = a + m[0].length;
+        if (!hits.some(x => a < x[1] && b > x[0])) hits.push([a, b, w.id]);
+      }
+    }
+  }
+  hits.sort((x, y) => x[0] - y[0]);
+  let out = '', at = 0;
+  for (const [a, b, id] of hits) { out += esc(s.slice(at, a)) + `<mark class="vw" data-id="${id}">${esc(s.slice(a, b))}</mark>`; at = b; }
+  return out + esc(s.slice(at));
+}
+function viewPage(step) {
+  const st = STORY[step.st], pg = st.pages[step.i], vocab = st.ids.map(id => BY_ID[id]);
+  const card = frame(`
+    <div class="prompt"><span class="tag">${esc(st.zh)}</span> 第 ${step.i + 1} / ${st.pages.length} 頁</div>
+    <div class="emoji-big">${pg.e}</div>
+    <div class="story">${pg.s.map(([en, zh], k) => `<div class="sline" data-k="${k}"><span class="en">${markVocab(en, vocab)}</span><span class="szh" hidden>${esc(zh)}</span></div>`).join('')}</div>
+    <div class="heard" id="tip">點<mark class="vw">畫線的字</mark>可以聽生字</div>
+    <div class="row">
+      <button class="btn soft small" id="play"><span class="emo">🔊</span> 唸這頁</button>
+      <button class="btn soft small" id="slow"><span class="emo">🐢</span> 慢慢唸</button>
+      <button class="btn soft small" id="zh">看中文</button>
+    </div>
+    ${speakBlock()}
+  `);
+  const lines = [...card.querySelectorAll('.sline')], mic = card.querySelector('#mic'), heard = card.querySelector('#heard'), stars = card.querySelector('#sstars');
+  let sel = 0, token = 0, got = false;
+  const short = pg.s.findIndex(([en]) => en.split(' ').length <= 14);
+  const pickLine = k => { sel = k; lines.forEach((l, j) => l.classList.toggle('sel', j === k)); };
+  pickLine(short >= 0 ? short : 0);
+  // 一句一句唸，唸到哪句就亮哪句；點別的地方（token 換了）就停
+  async function read(slow) {
+    const my = ++token;
+    for (let k = 0; k < lines.length; k++) {
+      if (my !== token || !document.body.contains(card)) return;
+      lines.forEach((l, j) => l.classList.toggle('reading', j === k));
+      await say(pg.s[k][0], slow);
+    }
+    if (my === token) lines.forEach(l => l.classList.remove('reading'));
+  }
+  const stop = () => { token++; lines.forEach(l => l.classList.remove('reading')); };
+  lines.forEach((l, k) => l.onclick = () => { stop(); pickLine(k); say(pg.s[k][0]); });
+  card.querySelectorAll('.story .vw').forEach(v => v.onclick = e => {
+    e.stopPropagation(); stop();
+    const w = BY_ID[v.dataset.id];
+    say(w.w);
+    card.querySelector('#tip').innerHTML = `<span class="emo">${w.e}</span> <b class="en">${esc(w.w)}</b>　${esc(w.g)}`;
+  });
+  card.querySelector('#play').onclick = () => read(false);
+  card.querySelector('#slow').onclick = () => read(true);
+  card.querySelector('#zh').onclick = e => {
+    const show = card.querySelector('.szh').hidden;
+    card.querySelectorAll('.szh').forEach(x => { x.hidden = !show; });
+    e.currentTarget.textContent = show ? '藏起中文' : '看中文';
+  };
+  const said = () => { if (!got) { got = true; gainStar(); mission('saySent'); } };
+  heard.textContent = srOff ? '點一句，跟著唸，唸完按 🙋' : '點一句，再按麥克風跟著唸';
+  if (srOff) {
+    mic.innerHTML = '<span class="emo">🙋</span>';
+    mic.setAttribute('aria-label', '我唸好了');
+    mic.onclick = () => {
+      sfx.yay(); burstAt(mic); heard.textContent = '好勇敢！唸出來就是最棒的！';
+      logEvent({ type: 'speak', sid: ses.sid, id: st.id, w: st.title, kind: 'story', mode: 'self' });
+      said();
+    };
+  } else {
+    mic.onclick = async () => {
+      if (mic.classList.contains('listening')) return;
+      stop();
+      const target = pg.s[sel][0];
+      mic.classList.add('listening'); heard.textContent = '小羊在聽……';
+      const r = await listen();
+      if (!ses || !document.body.contains(mic)) return;
+      mic.classList.remove('listening');
+      if (r.error) {
+        heard.textContent = srOff ? '麥克風沒辦法用，跟著唸就很棒了！' : r.error === 'no-speech' ? '沒聽到聲音耶，大聲一點點再試一次～' : '再按一次麥克風試試看～';
+        return;
+      }
+      const sc = judgeSentence(r.alts, target), n = sc >= .85 ? 3 : sc >= .6 ? 2 : sc >= .3 ? 1 : 0;
+      stars.textContent = '⭐'.repeat(n) + '☆'.repeat(3 - n); stars.classList.add('emo');
+      heard.innerHTML = `小羊聽到：<span class="en">${esc(r.alts[0] || '')}</span><br><b>${n >= 2 ? '唸得好棒！' : '再聽一次，然後再唸一次！'}</b>`;
+      logEvent({ type: 'speak', sid: ses.sid, id: st.id, w: st.title, kind: 'story', ok: n >= 2, stars: n, heard: r.alts[0] || '' });
+      if (n >= 2) { sfx.yay(); burstAt(mic, ['🎉', '⭐', '💖', '🎶']); said(); } else sfx.soft();
+    };
+  }
+  keep();
+  nextBtn(card, step.i + 1 < st.pages.length ? '下一頁' : '讀完了');
+  setTimeout(() => { if (document.body.contains(card)) read(false); }, 400);
+}
+// 故事問題：o 的第一個是答案；用假的字（故事編號-q1）記錄有沒有一次答對
+function viewStoryQ(step) {
+  const st = STORY[step.st], q = st.qs[step.i], pid = `${st.id}-q${step.i + 1}`;
+  if (!ses.res[pid]) ses.res[pid] = { first: true, review: true, storyQ: true };
+  const speakQ = () => say(q.q.replace(/_{2,}/g, 'blank'));
+  choiceQuiz(Object.assign({}, step, { w: { id: pid, w: st.title, u: st.id } }), {
+    tag: `故事問題 ${step.i + 1}/${st.qs.length}`, prompt: '',
+    body: `<div class="row"><div class="sentence">${esc(q.q)}</div><button class="icon-btn" id="sp" aria-label="聽題目"><span class="emo">🔊</span></button></div>
+      <div class="zh">${esc(q.z)}</div>`,
+    options: q.o, answer: q.o[0], cls: 'en',
+  });
+  document.getElementById('sp').onclick = speakQ;
+  speakQ();
+}
+
 /* ---------- 結束與存檔 ---------- */
 // 把一次練習的結果記進進度（正常結束、或下次打開時補記練到一半的那次，都走這裡）
 function settle(s) {
@@ -1799,6 +2043,8 @@ function settle(s) {
       const box = r.quizzed && r.first ? 2 : 1;     // 只看過沒考到的，明天就複習
       S.words[id] = { box, due: addDays(INTERVAL[box]), seen: 1, miss: r.first ? 0 : 1, first: t };
       out.learned.push(id);
+    } else if (old && r.quizzed && r.extra && r.first) {
+      old.seen = (old.seen || 0) + 1;               // 多練答對：盒子、複習日期都不動
     } else if (old && r.quizzed) {
       const box = r.first ? Math.min(6, old.box + 1) : 1;
       S.words[id] = Object.assign(old, { box, due: addDays(INTERVAL[box]), seen: (old.seen || 0) + 1, miss: (old.miss || 0) + (r.first ? 0 : 1) });
@@ -1827,6 +2073,18 @@ function finish() {
   S.pending = null;
   const prev = S.lastStars;
   const r = settle(s);
+  let storyMsg = '';
+  if (s.mode === 'story' && s.storyDone) {
+    const st = STORY[s.story];
+    const right = Object.values(s.res).filter(x => x.storyQ && x.first).length;
+    const rec = S.stories[s.story] || { n: 0, best: 0 }, firstTime = !rec.n;
+    rec.n++; rec.best = Math.max(rec.best, right); rec.last = today();
+    S.stories[s.story] = rec;
+    if (firstTime) S.chests.push('bonus');
+    logEvent({ type: 'story', sid: s.sid, got: s.story, first: right, tries: st.qs.length });
+    storyMsg = buddy(`讀完 <b class="en">${esc(st.title)}</b> 了！問題一次答對 <b>${right}</b> / ${st.qs.length} 題。`
+      + (firstTime ? '<br>第一次讀完這本，送你一個寶箱！' : ''), 'wow');
+  }
   save(); flush();
   if (s.mode === 'rescue') return rescueResult(r);
 
@@ -1834,7 +2092,8 @@ function finish() {
   const canBonus = r.counted && S.bonusOn !== t;
   $app.innerHTML = '';
   const card = h(`<section class="card">
-    <div class="hero">${lamb(r.counted ? 'cheer' : 'smile')}<h1>${r.counted ? `今天好棒，${NAME}！` : `休息一下，${NAME}～`}</h1></div>
+    <div class="hero">${lamb(r.counted || storyMsg ? 'cheer' : 'smile')}<h1>${r.counted ? `今天好棒，${NAME}！` : `休息一下，${NAME}～`}</h1></div>
+    ${storyMsg}
     <div class="result-stats">
       <div class="stat"><b>${s.stars}</b>得到星星</div>
       <div class="stat"><b>${r.learned.length}</b>新朋友</div>
@@ -1860,6 +2119,11 @@ function finish() {
   if (S.chests.length) {
     const b = h(`<button class="btn mint">打開寶箱 <span class="emo">🎁</span></button>`);
     b.onclick = () => { sfx.tap(); openChest(null, finishAgain); };
+    acts.appendChild(b);
+  }
+  if (s.mode === 'story') {
+    const b = h(`<button class="btn soft">故事屋 <span class="emo">📖</span></button>`);
+    b.onclick = () => { sfx.tap(); storyView(); };
     acts.appendChild(b);
   }
   const ok = h(`<button class="btn ${canBonus ? 'soft' : 'big'}">${r.counted ? '明天見！' : '回首頁'}<span class="emo">👋</span></button>`);
@@ -2039,12 +2303,13 @@ function home() {
       <span class="pill">${doneToday ? '今天練過了 <span class="emo">✅</span>' : !nx ? '小島蓋好了！' : nx[0] - S.days.length === 1 ? `今天練滿 ${COUNT_MIN} 分鐘，小島就會長出 <span class="emo">${nx[1]}</span>` : `再練 <b>${nx[0] - S.days.length}</b> 天，小島會長出 <span class="emo">${nx[1]}</span>`}</span>
     </div>
     <div class="plan">
-      <div class="plan-item"><span class="emo">🔁</span><div><b>${due ? `複習 ${Math.min(due, MAX_REVIEW)} 個字` : '今天沒有要複習的字'}</b><span>${due ? '以前學過、今天要再見一次的字' : '很棒，先學新字！'}</span></div></div>
+      <div class="plan-item"><span class="emo">🔁</span><div><b>${due ? `複習 ${due} 個字` : '今天沒有要複習的字'}</b><span>${due ? '以前學過、今天要再見一次的字' : '很棒，先學新字！'}</span></div></div>
       ${boss != null
         ? `<div class="plan-item"><span class="emo">⚔️</span><div><b>魔王在等你！</b><span>${ISLES[boss % ISLES.length][1]}的貪吃雲，開始練習就會遇到</span></div></div>`
         : `<div class="plan-item"><span class="emo">🌱</span><div><b>${u == null ? '全部學完了！' : `新單元 <span class="en">NCL4-${u}</span>`}</b><span>${u == null ? '多複習就好' : `還有 ${left} 個新字`}</span></div></div>`}
     </div>
     <button class="btn big" id="go">開始練習 <span class="emo">🚀</span></button>
+    ${storyBox ? `<button class="btn butter" id="story">故事屋 <span class="emo">📖</span>${STORIES.length && Object.keys(S.stories).length ? ` <b class="en">${Object.keys(S.stories).length}/${STORIES.length}</b>` : ''}</button>` : ''}
     ${S.chests.length ? `<button class="btn mint" id="chest">打開寶箱 <span class="emo">🎁</span> × ${S.chests.length}</button>` : ''}
     ${missionsHtml()}
     <div class="home-actions">
@@ -2056,13 +2321,15 @@ function home() {
       ${REMOTE.message ? `<button class="btn soft small" id="letter"><span class="emo">💌</span> 媽媽的信</button>` : ''}
       <button class="btn soft small" id="book"><span class="emo">📒</span> 貼紙簿 ${S.badges.length}/${UNITS.length}</button>
     </div>
-    <div class="meta-row"><span><i class="emo">⭐</i> 星星 ${S.stars}</span><span><i class="emo">📅</i> 練習了 ${S.days.length} 天</span><span><i class="emo">📚</i> 學過 ${Object.keys(S.words).length} / ${W.length} 個字</span>
+    <div class="meta-row"><span><i class="emo">⭐</i> 星星 ${S.stars}</span><span><i class="emo">📅</i> 練習了 ${S.days.length} 天</span><span><i class="emo">📚</i> 學過 ${Object.keys(S.words).filter(id => BY_ID[id]).length} / ${ALLW.length} 個字</span>
       <button class="sync-btn" id="sync">${syncLabel()}</button></div>
     ${srOff ? '<div class="heard">這台裝置不能用語音辨識，說話練習會改成「跟著唸」。</div>' : ''}
   </section>`);
   $app.appendChild(card);
   card.querySelector('#go').onclick = () => { pickVoice(); startSession(); };
   card.querySelector('#units').onclick = () => { sfx.tap(); unitsView(); };
+  const sb = card.querySelector('#story');
+  if (sb) sb.onclick = () => { sfx.tap(); storyView(); };
   card.querySelector('#book').onclick = () => { sfx.tap(); bookView(); };
   card.querySelector('#shop').onclick = () => { sfx.tap(); shopSlot = 'head'; tryOn = null; shopView(); };
   card.querySelector('#rescue').onclick = () => { sfx.tap(); rescueView(); };
@@ -2075,8 +2342,8 @@ function home() {
   const ch = card.querySelector('#chest');
   if (ch) ch.onclick = () => { sfx.tap(); openChest(null, home); };
   flush();
-  // 8 點後還沒練：一打開就吼；停在首頁跨過 8 點也會吼。老虎媽媽沒出來時，才送媽媽的新信
-  if (isLate()) showLateTiger();
+  // 8 點後還沒練：一打開就吼（同一天只吼一次，回首頁不重吼）；停在首頁跨過 8 點也會吼。老虎媽媽沒出來時，才送媽媽的新信
+  if (isLate()) { if (lateShownOn !== today()) showLateTiger(); }
   else if (REMOTE.message && REMOTE.message !== S.msgSeen) showLetter(true);
   clearInterval(homeTimer);
   homeTimer = setInterval(() => { if (!ses && isLate() && lateShownOn !== today()) showLateTiger(); }, 30000);
@@ -2203,7 +2470,7 @@ let dexFilter = 'all';
 function dexView() {
   $app.innerHTML = '';
   $app.appendChild(backBar('單字圖鑑'));
-  const mine = W.filter(w => S.words[w.id]), gold = w => S.words[w.id].box >= 4;
+  const mine = ALLW.filter(w => S.words[w.id]), gold = w => S.words[w.id].box >= 4;
   const g = mine.filter(gold).length;
   const list = dexFilter === 'gold' ? mine.filter(gold) : dexFilter === 'plain' ? mine.filter(w => !gold(w)) : mine;
   const tabs = [['all', `全部 ${mine.length}`], ['gold', `金卡 ${g}`], ['plain', `還不是金卡 ${mine.length - g}`]];
@@ -2324,6 +2591,47 @@ function syncView() {
   $app.appendChild(card);
 }
 
+function storyView() {
+  $app.innerHTML = '';
+  $app.appendChild(backBar('故事屋'));
+  if (!STORIES.length) return storyLock();
+  const card = h(`<section class="card">
+    ${buddy('選一本故事書！先認識生字，再聽故事、跟著唸，最後回答問題。<br>第一次讀完一本，就送你一個寶箱～', 'cheer')}
+    <div class="shelf"></div>
+  </section>`);
+  const box = card.querySelector('.shelf');
+  for (const st of STORIES) {
+    const rec = S.stories[st.id], learned = st.ids.filter(id => S.words[id]).length;
+    const b = h(`<button class="book ${rec ? 'done' : ''}"><span class="emo">${st.e}</span><div>
+      <b class="en">${esc(st.title)}</b><span>${esc(st.zh)}</span>
+      <span class="state">${rec ? `<span class="emo">✅</span> 讀過 ${rec.n} 次・答對 ${rec.best}/${st.qs.length}` : `生字 ${learned}/${st.ids.length}・${st.pages.length} 頁`}</span></div></button>`);
+    b.onclick = () => { pickVoice(); startStory(st.id); };
+    box.appendChild(b);
+  }
+  $app.appendChild(card);
+}
+
+// 故事屋上鎖：請大人輸入一次密碼，之後這台平板會記住
+function storyLock() {
+  const card = h(`<section class="card">
+    ${buddy('故事屋上鎖了！<br>請爸爸或媽媽輸入密碼（只要輸入一次）。', 'think')}
+    <input class="pass" id="pw" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="故事屋密碼">
+    <button class="btn" id="open">打開故事屋 <span class="emo">🔑</span></button>
+    <div class="heard" id="msg"></div>
+  </section>`);
+  const pw = card.querySelector('#pw'), btn = card.querySelector('#open'), msg = card.querySelector('#msg');
+  const go = async () => {
+    if (!pw.value.trim()) return;
+    btn.disabled = true; msg.textContent = '開鎖中……';
+    if (await unlockStories(pw.value.trim())) { sfx.fanfare(); storyView(); return; }
+    btn.disabled = false; sfx.soft(); wiggle(pw); msg.textContent = '密碼不對，再試一次';
+  };
+  btn.onclick = go;
+  pw.onkeydown = e => { if (e.key === 'Enter') go(); };
+  $app.appendChild(card);
+  pw.focus();
+}
+
 function rescueView() {
   $app.innerHTML = '';
   $app.appendChild(backBar('救援站'));
@@ -2376,7 +2684,7 @@ function bookView() {
 }
 
 /* ---------- 開始 ---------- */
-restoreIfEmpty().then(() => {
+restoreIfEmpty().then(loadStories).then(() => {
   // 上次練到一半就關掉：先把那次學過的字補記起來
   if (S.pending) { const p = S.pending; S.pending = null; settle(p); save(); }
   home();
@@ -2391,6 +2699,8 @@ restoreIfEmpty().then(() => {
   if (location.hash === '#idle') setTimeout(showIdleTiger, 300);
 });
 window.addEventListener('online', flush);
+// 離線也打得開：sw.js 一律先抓網路上的新版，抓不到才用存在平板上的
+if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>
