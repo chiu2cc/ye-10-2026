@@ -758,6 +758,17 @@ const sfx = {
 /* ---------- 聽陽寶說話：語音辨識 ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let srOff = !SR;   // 不支援或被拒，就改成「跟著唸」
+let srWhy = SR ? '' : 'no-api';   // 為什麼不能用（同步狀態頁的診斷會顯示）
+const SR_WHY = {
+  'no-api': '這個瀏覽器沒有語音辨識功能',
+  'not-allowed': '麥克風或語音辨識沒有被允許',
+  'service-not-allowed': '系統不允許語音辨識（聽寫沒開，或被螢幕使用時間限制）',
+  'network': '連不上語音辨識服務（網路）',
+  'audio-capture': '抓不到麥克風',
+  'timeout': '按了以後一直沒有回應',
+  'start': '語音辨識啟動失敗',
+};
+const srWhyText = () => srWhy ? `${SR_WHY[srWhy] || '語音辨識出錯'}（${srWhy}）` : '';
 function listen() {
   return new Promise(res => {
     if (srOff) return res({ error: 'off' });
@@ -765,11 +776,15 @@ function listen() {
     const r = new SR();
     r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 5; r.continuous = false;
     r.onresult = e => { for (const result of e.results) for (const a of result) alts.push(a.transcript); };
-    r.onerror = e => { if (['not-allowed', 'service-not-allowed', 'network', 'audio-capture'].includes(e.error)) { srOff = true; } finish({ error: e.error }); };
+    let alive = false;   // 有收到任何事件，才算語音辨識真的有在動
+    r.onstart = r.onaudiostart = () => { alive = true; };
+    r.onerror = e => { alive = true; if (['not-allowed', 'service-not-allowed', 'network', 'audio-capture'].includes(e.error)) { srOff = true; srWhy = e.error; } finish({ error: e.error }); };
     r.onend = () => finish(alts.length ? { alts } : { error: 'no-speech' });
-    function finish(v) { if (!done) { done = true; clearTimeout(t); res(v); } }
+    function finish(v) { if (!done) { done = true; clearTimeout(t); clearTimeout(t2); res(v); } }
     const t = setTimeout(() => { try { r.stop(); } catch (e) {} }, 7000);
-    try { speechSynthesis.cancel(); r.start(); } catch (e) { finish({ error: 'start' }); }
+    // 保險：10 秒都沒結束就放棄，不讓畫面卡在「小羊在聽」；完全沒動靜就改成跟著唸
+    const t2 = setTimeout(() => { try { r.abort(); } catch (e) {} if (!alive) { srOff = true; srWhy = 'timeout'; } finish({ error: 'timeout' }); }, 10000);
+    try { speechSynthesis.cancel(); r.start(); } catch (e) { srWhy = 'start'; finish({ error: 'start' }); }
   });
 }
 function lev(a, b) {
@@ -1684,13 +1699,15 @@ function viewSpell(step) {
     </div>
     <div class="slots">${word.split('').map(() => '<div class="slot"></div>').join('')}</div>
     <div class="tiles">${letters.map((c, i) => `<button class="tile" data-i="${i}">${c}</button>`).join('')}</div>
-    <div class="row"><button class="btn soft small" id="clear">重來</button></div>
+    <div class="row"><button class="btn soft small" id="bs">⌫ 退一格</button><button class="btn soft small" id="clear">全部重來</button>
+      <button class="btn mint small" id="ok">拼好了 ✓</button></div>
     <div class="heard" id="msg"></div>
   `);
   const slots = [...card.querySelectorAll('.slot')], tiles = [...card.querySelectorAll('.tile')], msg = card.querySelector('#msg');
+  const okBtn = card.querySelector('#ok');
   const fill = new Array(L).fill(null);    // 每格放的 tile 索引
   const locked = new Array(L).fill(false);
-  let tries = 0, done = false;
+  let tries = 0, done = false, dirty = false;   // dirty：上次檢查後有沒有改過（沒改就不能再按「拼好了」）
   card.querySelector('#sp').onclick = () => say(w.w);
   card.querySelector('#slow').onclick = () => say(w.w, true);
   function render() {
@@ -1700,13 +1717,21 @@ function viewSpell(step) {
       s.classList.toggle('locked', locked[k]);
     });
     tiles.forEach((t, i) => t.classList.toggle('used', fill.includes(i)));
+    // 全部放滿、而且改過，才出現「拼好了」：放錯最後一個字母也來得及改
+    okBtn.style.visibility = !done && dirty && fill.every(v => v != null) ? 'visible' : 'hidden';
   }
-  function lockLetters(n) {   // 提示：從頭開始幫忙放好 n 個字母
-    clearFree();
+  function lockLetters(n) {   // 提示：從頭開始幫忙放好 n 個字母；其他已經放的字母留著，不用全部重來
     for (let k = 0; k < n; k++) {
       if (locked[k]) continue;
-      const i = letters.findIndex((c, idx) => c === word[k] && !fill.includes(idx));
-      fill[k] = i; locked[k] = true;
+      if (fill[k] == null || letters[fill[k]] !== word[k]) {
+        let i = letters.findIndex((c, idx) => c === word[k] && !fill.includes(idx));
+        if (i < 0) {   // 這個字母被放在後面別格了：從那格拿回來
+          const j = fill.findIndex((v, kk) => v != null && !locked[kk] && kk !== k && letters[v] === word[k]);
+          i = fill[j]; fill[j] = null;
+        }
+        fill[k] = i;
+      }
+      locked[k] = true;
     }
     render();
   }
@@ -1714,14 +1739,21 @@ function viewSpell(step) {
   tiles.forEach(t => t.onclick = () => {
     if (done) return;
     const k = fill.findIndex(v => v == null); if (k < 0) return;
-    sfx.tap(); fill[k] = Number(t.dataset.i); render();
-    if (fill.every(v => v != null)) check();
+    if (t.classList.contains('used')) return;
+    sfx.tap(); fill[k] = Number(t.dataset.i); dirty = true; render();
   });
-  slots.forEach((s, k) => s.onclick = () => { if (done || locked[k] || fill[k] == null) return; fill[k] = null; render(); });
-  card.querySelector('#clear').onclick = () => { if (done) return; clearFree(); render(); };
+  slots.forEach((s, k) => s.onclick = () => { if (done || locked[k] || fill[k] == null) return; fill[k] = null; dirty = true; render(); });
+  card.querySelector('#bs').onclick = () => {   // 退一格：拿掉最後放的那個字母
+    if (done) return;
+    let k = L - 1; while (k >= 0 && (fill[k] == null || locked[k])) k--;
+    if (k < 0) return;
+    sfx.tap(); fill[k] = null; dirty = true; render();
+  };
+  card.querySelector('#clear').onclick = () => { if (done) return; clearFree(); dirty = true; render(); };
+  okBtn.onclick = () => { if (done || !dirty || !fill.every(v => v != null)) return; check(); };
   function check() {
     const got = fill.map(i => letters[i]).join('');
-    tries++;
+    tries++; dirty = false; okBtn.style.visibility = 'hidden';
     if (got === word) {
       done = true; sfx.yay(); burstAt(slots[Math.floor(L / 2)]);
       msg.innerHTML = `<b>${pick(CHEERS)}</b>`;
@@ -1732,15 +1764,16 @@ function viewSpell(step) {
     }
     sfx.soft(); wiggle(card.querySelector('.slots'));
     logEvent({ type: 'spellTry', sid: ses.sid, id: w.id, w: w.w, got });
-    if (tries === 1) { msg.textContent = '差一點點！小羊幫你放好第一個字母～'; setTimeout(() => lockLetters(1), 450); }
-    else if (tries === 2) { msg.textContent = '再幫你放好一半，加油！'; setTimeout(() => lockLetters(Math.max(2, Math.ceil(L / 2))), 450); }
+    if (tries === 1) { msg.textContent = '差一點點！小羊幫你放好第一個字母，把錯的字母換掉就好～'; setTimeout(() => lockLetters(1), 450); }
+    else if (tries === 2) { msg.textContent = '再幫你放好一半，把錯的字母換掉，加油！'; setTimeout(() => lockLetters(Math.max(2, Math.ceil(L / 2))), 450); }
     else {
       done = true; markMiss(w);
-      setTimeout(() => { lockLetters(L); msg.innerHTML = '<b>我們一起記住它！</b>念一遍：<span class="en">' + esc(w.w) + '</span>'; say(w.w, true); }, 450);
+      setTimeout(() => { clearFree(); lockLetters(L); msg.innerHTML = '<b>我們一起記住它！</b>念一遍：<span class="en">' + esc(w.w) + '</span>'; say(w.w, true); }, 450);
       answerLog(step, false, tries, { got });
       nextBtn(card);
     }
   }
+  render();
   setTimeout(() => say(w.w), 300);
 }
 
@@ -1834,28 +1867,34 @@ function viewSpellMaster(step) {
     </div>
     <div class="slots">${word.split('').map(() => '<div class="slot"></div>').join('')}</div>
     <div class="kb">${rows.map((r, i) => `<div class="kb-row r${i}">${r.split('').map(c => `<button class="key" data-c="${c}">${c}</button>`).join('')}</div>`).join('')}
-      <div class="kb-row tools"><button class="btn soft small" id="bs">⌫ 退一格</button></div></div>
+      <div class="kb-row tools"><button class="btn soft small" id="bs">⌫ 退一格</button><button class="btn mint small" id="ok">拼好了 ✓</button></div></div>
     <div class="heard" id="msg"></div>
   `);
   const slots = [...card.querySelectorAll('.slot')], msg = card.querySelector('#msg');
-  let typed = [], locked = 0, tries = 0, done = false;
+  let typed = [], locked = 0, tries = 0, done = false, dirty = false;
+  const okBtn = card.querySelector('#ok');
   card.querySelector('#sp').onclick = () => say(w.w);
   card.querySelector('#slow').onclick = () => say(w.w, true);
-  const render = () => slots.forEach((s, k) => {
-    s.textContent = typed[k] || '';
-    s.classList.toggle('filled', k < typed.length && k >= locked);
-    s.classList.toggle('locked', k < locked);
-  });
+  const render = () => {
+    slots.forEach((s, k) => {
+      s.textContent = typed[k] || '';
+      s.classList.toggle('filled', k < typed.length && k >= locked);
+      s.classList.toggle('locked', k < locked);
+    });
+    okBtn.style.visibility = !done && dirty && typed.length === L ? 'visible' : 'hidden';
+  };
   card.querySelectorAll('.key').forEach(b => b.onclick = () => {
     if (done || typed.length >= L) return;
-    sfx.tap(); typed.push(b.dataset.c); render();
-    if (typed.length === L) check();
+    sfx.tap(); typed.push(b.dataset.c); dirty = true; render();
   });
-  card.querySelector('#bs').onclick = () => { if (done || typed.length <= locked) return; typed.pop(); render(); };
-  function lock(n) { locked = n; typed = word.slice(0, n).split(''); render(); }
+  card.querySelector('#bs').onclick = () => { if (done || typed.length <= locked) return; sfx.tap(); typed.pop(); dirty = true; render(); };
+  okBtn.onclick = () => { if (done || !dirty || typed.length < L) return; check(); };
+  // 提示：前 n 個字母放好；後面已經打的留著，用「退一格」改就好
+  function lock(n) { locked = n; typed = word.slice(0, n).split('').concat(typed.slice(n)); render(); }
+  render();
   function check() {
     const got = typed.join('');
-    tries++;
+    tries++; dirty = false; okBtn.style.visibility = 'hidden';
     if (got === word) {
       done = true; sfx.yay(); burstAt(slots[Math.floor(L / 2)], ['👑', '⭐', '🌟', '✨']);
       msg.innerHTML = `<b>大師級！${pick(CHEERS)}</b>`;
@@ -2413,9 +2452,11 @@ function home() {
     </div>
     <div class="meta-row"><span><i class="emo">⭐</i> 星星 ${S.stars}</span><span><i class="emo">📅</i> 練習了 ${S.days.length} 天</span><span><i class="emo">📚</i> 學過 ${Object.keys(S.words).filter(id => BY_ID[id]).length} / ${ALLW.length} 個字</span>
       <button class="sync-btn" id="sync">${syncLabel()}</button></div>
-    ${srOff ? '<div class="heard">這台裝置不能用語音辨識，說話練習會改成「跟著唸」。</div>' : ''}
+    ${srOff ? `<button class="sync-btn" id="srdiag">這台裝置不能用語音辨識，說話練習會改成「跟著唸」。<br>原因：${esc(srWhyText())}　👉 點這裡測試麥克風</button>` : ''}
   </section>`);
   $app.appendChild(card);
+  const sd = card.querySelector('#srdiag');
+  if (sd) sd.onclick = () => { sfx.tap(); syncView(); };
   card.querySelector('#go').onclick = () => { pickVoice(); startSession(); };
   card.querySelector('#units').onclick = () => { sfx.tap(); unitsView(); };
   card.querySelector('#map').onclick = () => { sfx.tap(); mapView(); };
@@ -2664,8 +2705,9 @@ function syncView() {
     <div class="pill" style="align-self:center">${syncLabel()}</div>
     <div class="heard">這台裝置：<span class="en">${esc(S.device)}</span>　送到：<span class="en">${esc(host || '（沒有設定）')}</span><br>
       進度：練習 ${S.days.length} 天、學過 ${Object.keys(S.words).length} 個字</div>
-    <div class="row"><button class="btn mint small" id="send">再送一次</button><button class="btn soft small" id="test">測試連線</button></div>
+    <div class="row"><button class="btn mint small" id="send">再送一次</button><button class="btn soft small" id="test">測試連線</button><button class="btn butter small" id="mictest">測試麥克風 <span class="emo">🎤</span></button></div>
     <div class="heard" id="out"></div>
+    <div class="heard" id="srout" style="text-align:left;font-size:15px;line-height:1.5;overflow-wrap:anywhere">語音辨識：${srOff ? '不能用　' + esc(srWhyText()) : '可以用'}</div>
     <div class="missions"><h3>最近 ${log.length} 次送資料</h3>
       ${log.length ? log.map(x => `<div class="mis"><span class="en" style="min-width:96px">${fmt(x.at)}</span><span>${why(x.res)}</span>
         <span class="cnt" style="flex:1;text-align:left;font-size:14px;color:var(--ink-soft)">${esc(x.res)}</span></div>`).join('') : '<div class="mis">還沒有送過</div>'}
@@ -2681,7 +2723,33 @@ function syncView() {
       out.textContent = `讀取：HTTP ${r.status}　${t.slice(0, 80)}`;
     } catch (e) { out.textContent = '讀取失敗：' + String((e && e.message) || e); }
   };
+  card.querySelector('#mictest').onclick = () => { sfx.tap(); micTest(card.querySelector('#srout')); };
   $app.appendChild(card);
+}
+// 麥克風診斷：把語音辨識每一步發生的事列出來，找出為什麼不能用
+function micTest(box) {
+  const t0 = Date.now(), lines = [];
+  const put = (x) => { lines.push(`${((Date.now() - t0) / 1000).toFixed(1)}s　${x}`); box.innerHTML = lines.map(esc).join('<br>'); };
+  const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  put(`環境：${standalone ? '主畫面圖示開的' : '瀏覽器分頁'}；語音辨識功能 ${SR ? '有' : '沒有'}（${window.SpeechRecognition ? 'std' : window.webkitSpeechRecognition ? 'webkit' : 'none'}）；安全連線 ${isSecureContext ? '是' : '否'}`);
+  put(`瀏覽器：${navigator.userAgent}`);
+  if (!SR) { srOff = true; srWhy = 'no-api'; put('結論：這個瀏覽器沒有語音辨識功能（no-api）'); return; }
+  let r, got = false, err = '';
+  try { r = new SR(); } catch (e) { put('建立失敗：' + e.message); return; }
+  r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 3;
+  for (const ev of ['start', 'audiostart', 'soundstart', 'speechstart', 'speechend', 'soundend', 'audioend', 'nomatch'])
+    r['on' + ev] = () => put('事件 ' + ev);
+  r.onresult = e => { got = true; put('聽到：' + [...e.results].map(x => x[0].transcript).join(' / ')); };
+  r.onerror = e => { err = e.error; put(`錯誤 ${e.error}${e.message ? '：' + e.message : ''}`); };
+  r.onend = () => {
+    clearTimeout(stop); clearTimeout(dead);
+    if (got) { srOff = false; srWhy = ''; put('結論：可以用！語音辨識已經重新打開，回首頁再試一次。'); }
+    else if (err && err !== 'no-speech' && err !== 'aborted') { srOff = true; srWhy = err; put(`結論：不能用　${srWhyText()}`); }
+    else { srOff = false; srWhy = ''; put('結論：有啟動，但沒聽到聲音。再按一次，按完馬上大聲說 Hello。'); }
+  };
+  const stop = setTimeout(() => { try { r.stop(); } catch (e) {} }, 6000);
+  const dead = setTimeout(() => { try { r.abort(); } catch (e) {} if (!lines.some(x => x.includes('事件') || x.includes('錯誤'))) { srOff = true; srWhy = 'timeout'; put('結論：按了以後完全沒有回應（timeout）'); } }, 9000);
+  try { speechSynthesis.cancel(); r.start(); put('已啟動，請說 Hello……'); } catch (e) { clearTimeout(stop); clearTimeout(dead); srOff = true; srWhy = 'start'; put('啟動失敗：' + e.message); }
 }
 
 function storyView() {
