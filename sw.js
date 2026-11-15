@@ -1,6 +1,6 @@
 // 離線快取：網頁檔一律先抓網路上的新版（改版馬上看得到），沒網路才用存在平板上的。
 // 字型檔不會變，存過就直接用。進度送到試算表的請求不經過這裡。
-const CACHE = 'yb-v2';
+const CACHE = 'yb-v3';
 const CORE = ['./', 'index.html', 'config.js', 'words.js', 'stories.enc.json', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

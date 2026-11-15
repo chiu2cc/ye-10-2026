@@ -415,6 +415,51 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
 .dexcard span { font-size: 15px; color: var(--ink-soft); }
 .dexcard.gold { background: linear-gradient(160deg, #FFF3C4, #FFE07A); box-shadow: 0 4px 0 var(--butter-deep), inset 0 0 0 3px #F5C842; }
 
+/* ---------- 探險地圖 ---------- */
+.zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+.zone {
+  border-radius: 22px; background: var(--zbg); box-shadow: 0 5px 0 var(--line), inset 0 0 0 3px rgba(0,0,0,.06);
+  padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0;
+}
+.zone .ze { font-size: 44px; line-height: 1.15; }
+.zone b { font-size: 20px; }
+.zone .zen { font-size: 14px; color: var(--ink-soft); line-height: 1.2; }
+.zone .state { font-size: 16px; font-weight: 700; margin-top: 2px; }
+.zone.locked { background: #F1ECE8; filter: saturate(.4); }
+.zone.full { box-shadow: 0 5px 0 var(--butter-deep), inset 0 0 0 3px #F5C842; }
+.zone-head {
+  display: flex; align-items: center; gap: 14px; width: 100%; border-radius: 22px; background: var(--zbg);
+  padding: 12px 18px; text-align: left;
+}
+.zone-head > .emo { font-size: 56px; }
+.zone-head b { display: block; font-size: 26px; }
+.zone-head span, .zone-head small { display: block; color: var(--ink-soft); }
+.zone-head small { font-size: 14px; }
+.zgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.zcard {
+  border-radius: 18px; background: var(--zbg); box-shadow: 0 4px 0 var(--line), inset 0 0 0 3px rgba(0,0,0,.06);
+  padding: 10px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0;
+}
+.zcard .emo { font-size: 44px; line-height: 1.15; }
+.zcard b { font-weight: 600; font-size: 19px; overflow-wrap: anywhere; }
+.zcard span { font-size: 15px; color: var(--ink-soft); }
+.zcard.empty { background: #F4F0EC; }
+.zcard.empty .emo { opacity: .45; }
+.zcard.fresh { animation: pop .6s 2; box-shadow: 0 4px 0 var(--butter-deep), inset 0 0 0 3px #F5C842; }
+.zcard.big { width: 180px; padding: 16px 8px; }
+.zcard.big .emo { font-size: 72px; }
+@media (max-width: 520px) { .zones, .zgrid { grid-template-columns: repeat(2, 1fr); } }
+.qa-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.qa-step { border-radius: 18px; background: #fff; box-shadow: inset 0 0 0 3px var(--line); padding: 10px 6px; display: flex; flex-direction: column; align-items: center; }
+.qa-step .emo { font-size: 34px; }
+.qa-step b { font-size: 19px; }
+.qa-step span { font-size: 14px; color: var(--ink-soft); }
+.qa-step em { font-style: normal; font-weight: 700; margin-top: 2px; }
+.qa-q { display: block; font-size: clamp(22px, 3.6vw, 27px); line-height: 1.35; }
+.bubble .zh { display: block; font-size: 16px; color: var(--ink-soft); margin-top: 4px; }
+.qa-ans .nowrap { white-space: nowrap; }
+.qa-ans .blank { display: inline-block; min-width: 3.2em; border-bottom: 3px dashed var(--pink-deep); margin: 0 4px; }
+
 /* ---------- 媽媽兌換券、媽媽的信 ---------- */
 .coupons { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; width: 100%; }
 .coupon {
@@ -524,7 +569,9 @@ function installStories(list) {
   const extra = [];
   for (const st of list) {
     st.ids = st.vocab.map((v, i) => {
-      const same = !v.own && W.find(x => x.w.toLowerCase() === v.w.toLowerCase());
+      // 跟 Level 4 或前面故事的生字一樣，就共用同一個字（同一張卡）
+      const same = !v.own && (W.find(x => x.w.toLowerCase() === v.w.toLowerCase())
+        || extra.find(x => !x.own && x.w.toLowerCase() === v.w.toLowerCase()));
       if (same) return same.id;
       const w = Object.assign({ id: `${st.id}-${i + 1}`, u: st.id }, v);
       extra.push(w);
@@ -567,6 +614,8 @@ function blankState() {
     words: {}, stars: 0, badges: [], days: [], curUnit: UNITS[0], outbox: [], device: uid(),
     owned: ['bow'], wear: { head: 'bow' }, friends: 0, chests: [], bonusOn: '', lastStars: null,
     bosses: [], coupons: [], msgSeen: '', daily: null, gifts: [], stories: {},
+    zones: ['earth'], cards: [],   // 探險地圖：打開的區域、收集到的動物卡
+    qa: {}, qaDay: {},             // 小羊問答：每題說對幾次（決定提示多少）、每區今天送過卡沒
     syncLog: [],     // 最近 20 次送資料的結果，跟著進度一起上傳，查「為什麼沒送上來」用
     pending: null,   // 練到一半關掉時的進度，下次打開時補記
   };
@@ -788,6 +837,13 @@ const ITEMS = [
   { id: 'rainbow', slot: 'aura', e: '🌈', name: '彩虹光環', r: 's', chest: true },
   { id: 'starlight', slot: 'aura', e: '🌟', name: '星光', r: 's', chest: true },
   { id: 'butterfly', slot: 'aura', e: '🦋', name: '蝴蝶飛飛', r: 's', chest: true },
+  // 探險隊系列（配合探險地圖）
+  { id: 'diving', slot: 'face', e: '🤿', name: '潛水面鏡', r: 'n', price: 25 },
+  { id: 'compass', slot: 'hand', e: '🧭', name: '指南針', r: 'n', price: 20 },
+  { id: 'scope', slot: 'hand', e: '🔭', name: '望遠鏡', r: 'r', price: 45 },
+  { id: 'map', slot: 'hand', e: '🗺️', name: '藏寶圖', r: 'r', price: 40 },
+  { id: 'leaves', slot: 'aura', e: '🍃', name: '樹葉飛舞', r: 'r', price: 55 },
+  { id: 'fishes', slot: 'aura', e: '🐠', name: '小魚環繞', r: 's', chest: true },
 ];
 const ITEM = Object.fromEntries(ITEMS.map(x => [x.id, x]));
 const emoT = (e, x, y, size, rot = 0, cls = '') =>
@@ -862,10 +918,21 @@ const ISLAND = [
   [35, '⛺', '帳篷', 142, 176, 30],
   [45, '🎪', '馬戲團', 144, 124, 40],
   [60, '🚀', '火箭', 370, 96, 40],
+  [70, '🦩', '紅鶴', 30, 206, 26],
+  [80, '🐠', '熱帶魚', 300, 252, 22],
+  [90, '🏔️', '雪山', 96, 108, 44],
+  [100, '🪁', '風箏', 206, 40, 34],
+  [110, '🛸', '飛碟', 256, 56, 30],
+  [120, '🛶', '獨木舟', 350, 250, 28],
+  [130, '🌠', '流星', 160, 26, 28],
+  [140, '🐚', '貝殼', 70, 242, 20],
+  [150, '🪐', '行星', 96, 50, 34],
 ];
-const FRIENDS = ['🐰', '🐥', '🐢', '🐹', '🦔', '🐼', '🐨', '🦊', '🐸', '🐧', '🐞', '🐿️', '🦉', '🐬', '🐙', '🦄'];
+const FRIENDS = ['🐰', '🐥', '🐢', '🐹', '🦔', '🐼', '🐨', '🦊', '🐸', '🐧', '🐞', '🐿️', '🦉', '🐬', '🐙', '🦄',
+  '🦦', '🐤', '🐑', '🐶', '🐱', '🐻', '🦭', '🐝'];
 const FRIEND_POS = [[84, 214], [112, 228], [296, 230], [330, 214], [204, 242], [116, 192], [288, 192], [182, 204],
-  [222, 206], [346, 202], [48, 178], [146, 236], [266, 240], [318, 190], [80, 176], [372, 206]];
+  [222, 206], [346, 202], [48, 178], [146, 236], [266, 240], [318, 190], [80, 176], [372, 206],
+  [236, 252], [168, 186], [62, 222], [352, 228], [240, 196], [272, 216], [130, 252], [134, 88]];
 function islandSvg(days = S.days.length, friends = S.friends || 0) {
   const grass = days >= 1;
   const things = ISLAND.filter(x => x[0] <= days).sort((a, b) => a[4] - b[4]);
@@ -1198,7 +1265,7 @@ function burstAt(el, set) { const r = el.getBoundingClientRect(); burst(r.left +
 function wiggle(el) { el.classList.remove('wiggle', 'jelly'); void el.offsetWidth; el.classList.add('wiggle'); }
 // 軟Q手感：碰到的按鈕都會壓扁再彈回來
 document.addEventListener('pointerdown', e => {
-  const b = e.target.closest && e.target.closest('.btn, .choice, .tile, .chip, .icon-btn, .node, .item, .tab, .mic, .unit, .dexcard, .coupon, .key, .book');
+  const b = e.target.closest && e.target.closest('.btn, .choice, .tile, .chip, .icon-btn, .node, .item, .tab, .mic, .unit, .dexcard, .coupon, .key, .book, .zone, .zcard');
   if (!b || b.classList.contains('wiggle')) return;
   b.classList.remove('jelly'); void b.offsetWidth; b.classList.add('jelly');
   b.addEventListener('animationend', () => b.classList.remove('jelly'), { once: true });
@@ -2083,7 +2150,7 @@ function finish() {
     if (firstTime) S.chests.push('bonus');
     logEvent({ type: 'story', sid: s.sid, got: s.story, first: right, tries: st.qs.length });
     storyMsg = buddy(`讀完 <b class="en">${esc(st.title)}</b> 了！問題一次答對 <b>${right}</b> / ${st.qs.length} 題。`
-      + (firstTime ? '<br>第一次讀完這本，送你一個寶箱！' : ''), 'wow');
+      + (firstTime ? '<br>第一次讀完這本，送你一個寶箱！' + storyZoneReward(st) : ''), 'wow');
   }
   save(); flush();
   if (s.mode === 'rescue') return rescueResult(r);
@@ -2125,6 +2192,12 @@ function finish() {
     const b = h(`<button class="btn soft">故事屋 <span class="emo">📖</span></button>`);
     b.onclick = () => { sfx.tap(); storyView(); };
     acts.appendChild(b);
+    const z = ZONE[STORY[s.story] && STORY[s.story].zone];
+    if (z && zoneOpen(z)) {
+      const mb = h(`<button class="btn soft">${z.name} <span class="emo">${z.e}</span></button>`);
+      mb.onclick = () => { sfx.tap(); zoneView(z); };
+      acts.appendChild(mb);
+    }
   }
   const ok = h(`<button class="btn ${canBonus ? 'soft' : 'big'}">${r.counted ? '明天見！' : '回首頁'}<span class="emo">👋</span></button>`);
   ok.onclick = () => { sfx.tap(); home(); };
@@ -2153,8 +2226,13 @@ function askQuit() {
 function openChest(kind, after = home) {
   if (!kind) { kind = S.chests.shift() || 'bonus'; save(); }
   const pool = ITEMS.filter(x => !S.owned.includes(x.id) && (kind === 'super' ? x.r === 's' : !x.chest));
-  const item = pool.length ? pick(pool) : null;
+  let item = pool.length ? pick(pool) : null;
   const extra = kind === 'super' ? 30 : 15;   // 衣櫥都拿齊了就改送星星
+  // 探險地圖打開的區域還有卡片：普通寶箱一半機會開到卡片；衣櫥拿齊了就一定開卡片
+  const cardsLeft = ZONES.filter(zoneOpen).flatMap(zoneLeft).length;
+  const useCard = cardsLeft && (!item || (kind !== 'super' && Math.random() < 0.5));
+  if (useCard) item = null;
+  let cid = null;
   const m = h(`<div class="overlay">
     <div class="chest" role="button" aria-label="打開寶箱">🎁</div>
     <div class="bubble">${kind === 'super' ? '超稀有寶箱！' : '寶箱！'}碰一下打開～</div>
@@ -2166,20 +2244,31 @@ function openChest(kind, after = home) {
     opened = true; sfx.tap();
     m.querySelector('.chest').classList.add('shake');
     setTimeout(() => {
-      if (item) S.owned.push(item.id); else S.stars += extra;
+      if (useCard) cid = giveCard();
+      else if (item) S.owned.push(item.id); else S.stars += extra;
       save();
-      logEvent({ type: 'chest', kind, got: item ? item.id : 'stars+' + extra }); flush();
+      logEvent({ type: 'chest', kind, got: cid ? 'card:' + cid : item ? item.id : 'stars+' + extra }); flush();
+      const cc = cid && cardOf(cid);
       const close = () => { m.remove(); after(); };
       m.innerHTML = '';
       const c = h(`<section class="card">
-        ${item
+        ${cc
+          ? `${cardHtml(cid, true)}<h2 style="margin:0">探險卡：${cc.z.name}</h2><div class="heard">收進探險地圖了！${zoneLeft(cc.z).length ? `這一區還差 ${zoneLeft(cc.z).length} 張。` : '這一區收齊了，送你一個超稀有寶箱！'}</div>`
+          : item
           ? `<div class="prize">${item.e}</div><span class="rar ${item.r}">${RARITY[item.r]}</span><h2 style="margin:0">${item.name}</h2>
              <div class="wardrobe-lamb">${lamb('cheer', Object.assign({}, S.wear, { [item.slot]: item.id }))}</div>`
           : `<div class="prize">⭐</div><h2 style="margin:0">得到 ${extra} 顆星星！</h2><div class="heard">衣櫥裡的東西都拿到了，好厲害！</div>`}
         <div class="row" id="acts"></div>
       </section>`);
       const acts = c.querySelector('#acts');
-      if (item) {
+      if (cc) {
+        const look = h(`<button class="btn">去看看！<span class="emo">🗺️</span></button>`);
+        look.onclick = () => { sfx.tap(); m.remove(); zoneView(cc.z); };
+        const ok = h(`<button class="btn soft small">好耶！</button>`);
+        ok.onclick = () => { sfx.tap(); close(); };
+        acts.append(look, ok);
+        pickVoice(); sayCard(cc.c);
+      } else if (item) {
         const wearIt = h(`<button class="btn">穿上它！<span class="emo">✨</span></button>`);
         wearIt.onclick = () => { sfx.tap(); S.wear[item.slot] = item.id; save(); close(); };
         const keepIt = h(`<button class="btn soft small">先收進衣櫥</button>`);
@@ -2314,6 +2403,7 @@ function home() {
     ${missionsHtml()}
     <div class="home-actions">
       <button class="btn soft small" id="units"><span class="emo">🗺️</span> 闖關地圖</button>
+      <button class="btn soft small" id="map"><span class="emo">🧭</span> 探險地圖 <b class="en">${S.cards.length}</b></button>
       <button class="btn soft small" id="shop"><span class="emo">👗</span> 小羊衣櫥</button>
       <button class="btn soft small" id="rescue"><span class="emo">🚑</span> 救援站${resc ? ` <b class="en">${resc}</b>` : ''}</button>
       <button class="btn soft small" id="dex"><span class="emo">🃏</span> 單字圖鑑 <b class="en">${golds}</b><span class="emo">✨</span></button>
@@ -2328,6 +2418,7 @@ function home() {
   $app.appendChild(card);
   card.querySelector('#go').onclick = () => { pickVoice(); startSession(); };
   card.querySelector('#units').onclick = () => { sfx.tap(); unitsView(); };
+  card.querySelector('#map').onclick = () => { sfx.tap(); mapView(); };
   const sb = card.querySelector('#story');
   if (sb) sb.onclick = () => { sfx.tap(); storyView(); };
   card.querySelector('#book').onclick = () => { sfx.tap(); bookView(); };
@@ -2350,9 +2441,9 @@ function home() {
 }
 let homeTimer = null;
 
-function backBar(title) {
-  const top = h(`<div class="topbar"><button class="icon-btn" id="back" aria-label="回首頁"><span class="emo">🏠</span></button><h2 style="margin:0;font-size:28px">${title}</h2></div>`);
-  top.querySelector('#back').onclick = () => { sfx.tap(); home(); };
+function backBar(title, back) {
+  const top = h(`<div class="topbar"><button class="icon-btn" id="back" aria-label="${back ? '回上一頁' : '回首頁'}"><span class="emo">${back ? '⬅️' : '🏠'}</span></button><h2 style="margin:0;font-size:28px">${title}</h2></div>`);
+  top.querySelector('#back').onclick = () => { sfx.tap(); (back || home)(); };
   return top;
 }
 // 闖關地圖：每 10 個單元一座島，一排 5 關、來回蛇行
@@ -2450,7 +2541,9 @@ function islandView() {
     ${have.length ? `<div class="learned">${have.map(x => `<span><i class="emo">${x[1]}</i> ${x[2]}</span>`).join('')}</div>` : ''}
     ${soon.length ? `<div class="heard">接下來：${soon.map(x => `第 <b class="en">${x[0]}</b> 天 <span class="emo">❓</span>`).join('　')}</div>` : ''}
     <div class="heard">${pets.length ? `住在島上的小動物：<span class="friends">${pets.join('')}</span>` : '去救援站救小動物，牠們會搬來小島住！'}</div>
+    <button class="btn soft" id="tomap">坐船去探險 <span class="emo">⛵🧭</span></button>
   </section>`);
+  card.querySelector('#tomap').onclick = () => { sfx.tap(); mapView(); };
   let last = -1;
   card.querySelector('.lamb-hit').onclick = () => {
     const lines = lambLines();
@@ -2682,6 +2775,440 @@ function bookView() {
   }
   $app.appendChild(card);
 }
+
+/* ---------- 探險地圖：Level 4 講義主題分 9 區，每區 6 張動物／地方卡 ----------
+   打開區域：用星星買，或在故事屋讀完那區的故事（第一次讀完還會送一張那區的卡）
+   拿卡片：讀完那區的故事、開寶箱（有一半機會開到卡片）；一區 6 張收齊送超稀有寶箱
+   卡片：[英文, 中文, 表情, 例句, 例句中文] */
+const ZONES = [
+  { id: 'earth', e: '🌍', name: '地球村', en: 'Our Earth', price: 0, bg: '#E7F5D6', from: 'Lv4-1～4', cards: [
+    ['island', '島嶼', '🏝️', 'Taiwan is a big island.', '台灣是一座大島。'],
+    ['volcano', '火山', '🌋', 'Volcanoes spurt out ash, rocks, and lava.', '火山會噴出火山灰、石頭和岩漿。'],
+    ['cave', '洞穴', '🦇', 'Look! There is a big cave.', '你看！有一個大洞穴。'],
+    ['hill', '小山丘', '⛰️', 'A hill is lower than a mountain.', '小山丘比山矮。'],
+    ['ant', '螞蟻', '🐜', 'Ants work hard to gather food.', '螞蟻努力收集食物。'],
+    ['grasshopper', '蚱蜢', '🦗', 'The grasshoppers were lazy.', '蚱蜢很懶惰。']] },
+  { id: 'river', e: '🏞️', name: '小河谷', en: 'Rivers and Streams', price: 30, bg: '#DDF1F7', from: 'Lv4-5', cards: [
+    ['fish', '魚', '🐟', 'Fish live in the river.', '魚住在河裡。'],
+    ['shrimp', '蝦子', '🦐', 'Shrimp live in the stream.', '蝦子住在小溪裡。'],
+    ['otter', '水獺', '🦦', 'Otters are playing in the river.', '水獺在河裡玩。'],
+    ['frog', '青蛙', '🐸', 'Frogs are singing in the stream.', '青蛙在小溪裡唱歌。'],
+    ['crab', '螃蟹', '🦀', 'A crab is walking by the river.', '一隻螃蟹在河邊走。'],
+    ['duck', '鴨子', '🦆', 'A duck is swimming in the river.', '一隻鴨子在河裡游泳。']] },
+  { id: 'water', e: '💧', name: '水之泉', en: 'Types of Water', price: 30, bg: '#E3ECFF', from: 'Lv4-6～9', cards: [
+    ['lake', '湖', '🛶', 'You can swim in the lake.', '你可以在湖裡游泳。'],
+    ['pond', '池塘', '🪷', 'A pond is like a small lake.', '池塘像一個小小的湖。'],
+    ['glacier', '冰河', '🧊', 'Glaciers are huge rivers of ice.', '冰河是巨大的冰之河。'],
+    ['waterfall', '瀑布', '💦', 'Water flows down the waterfall.', '水從瀑布流下來。'],
+    ['rain', '雨', '🌧️', 'Rain falls from the clouds.', '雨從雲裡落下來。'],
+    ['saltwater', '鹹水', '🧂', 'Saltwater is too salty to drink.', '鹹水太鹹了不能喝。']] },
+  { id: 'plains', e: '🦓', name: '大草原', en: 'The Great Plains', price: 40, bg: '#FFF1C9', from: 'Lv4-10～11', cards: [
+    ['zebra', '斑馬', '🦓', 'Zebras have black and white stripes.', '斑馬有黑白條紋。'],
+    ['elephant', '大象', '🐘', 'Elephants drink water with their trunks.', '大象用象鼻喝水。'],
+    ['leopard', '花豹', '🐆', 'Leopards run very fast.', '花豹跑得非常快。'],
+    ['giraffe', '長頸鹿', '🦒', 'Giraffes have very long necks.', '長頸鹿有很長的脖子。'],
+    ['lion', '獅子', '🦁', 'Lions live on the plains.', '獅子住在草原上。'],
+    ['rhino', '犀牛', '🦏', 'A rhino has a big horn.', '犀牛有一支大角。']] },
+  { id: 'mountain', e: '🏔️', name: '高山', en: 'The Mountains', price: 40, bg: '#E4EEDD', from: 'Lv4-12', cards: [
+    ['bear', '熊', '🐻', 'Bears are good at fishing.', '熊很會抓魚。'],
+    ['deer', '鹿', '🦌', 'Deer eat grass.', '鹿吃草。'],
+    ['monkey', '猴子', '🐒', 'Monkeys swing from trees.', '猴子在樹上盪來盪去。'],
+    ['eagle', '老鷹', '🦅', 'An eagle flies over the mountains.', '老鷹飛過高山。'],
+    ['wolf', '狼', '🐺', 'Wolves live in the mountains.', '狼住在山上。'],
+    ['pine tree', '松樹', '🌲', 'Pine trees grow on the mountains.', '松樹長在山上。']] },
+  { id: 'desert', e: '🐪', name: '沙漠', en: 'The Deserts', price: 40, bg: '#FBE5C8', from: 'Lv4-13', cards: [
+    ['camel', '駱駝', '🐪', 'Camels don’t need much water.', '駱駝不需要很多水。'],
+    ['cactus', '仙人掌', '🌵', 'Cactuses grow in the desert.', '仙人掌長在沙漠裡。'],
+    ['snake', '蛇', '🐍', 'Snakes can grow new skin.', '蛇會長出新的皮。'],
+    ['scorpion', '蠍子', '🦂', 'Scorpions have eight legs.', '蠍子有八隻腳。'],
+    ['lizard', '蜥蜴', '🦎', 'A lizard is resting on a rock.', '一隻蜥蜴在石頭上休息。'],
+    ['rat', '老鼠', '🐀', 'Scorpions eat bugs and rats.', '蠍子吃蟲子和老鼠。']] },
+  { id: 'ocean', e: '🐋', name: '大海', en: 'The Ocean', price: 50, bg: '#D3EBFA', from: 'Lv4-14～15、18', cards: [
+    ['dolphin', '海豚', '🐬', 'Dolphins are very smart.', '海豚非常聰明。'],
+    ['shark', '鯊魚', '🦈', 'Sharks are very strong.', '鯊魚非常強壯。'],
+    ['whale', '鯨魚', '🐋', 'Whales are the largest animals in the ocean.', '鯨魚是海裡最大的動物。'],
+    ['octopus', '章魚', '🐙', 'An octopus has eight arms.', '章魚有八隻腳。'],
+    ['squid', '魷魚', '🦑', 'Dolphins like to eat squid.', '海豚喜歡吃魷魚。'],
+    ['jellyfish', '水母', '🪼', 'A jellyfish is floating in the sea.', '一隻水母在海裡漂。']] },
+  { id: 'wetland', e: '🦫', name: '水邊', en: 'Semi-aquatic Animals', price: 50, bg: '#DAF1E2', from: 'Lv4-16', cards: [
+    ['turtle', '烏龜', '🐢', 'Turtles live on the land and in the water.', '烏龜在陸地和水裡都能住。'],
+    ['beaver', '河狸', '🦫', 'Beavers are powerful swimmers.', '河狸很會游泳。'],
+    ['hippo', '河馬', '🦛', 'Hippos stay in the water to keep cool.', '河馬待在水裡保持涼快。'],
+    ['crocodile', '鱷魚', '🐊', 'Crocodiles have sharp teeth.', '鱷魚有尖尖的牙齒。'],
+    ['mosquito', '蚊子', '🦟', 'Frogs eat flies and mosquitoes.', '青蛙吃蒼蠅和蚊子。'],
+    ['swan', '天鵝', '🦢', 'A swan is swimming in the pond.', '一隻天鵝在池塘裡游泳。']] },
+  { id: 'taiwan', e: '🇹🇼', name: '我的國家', en: 'My Country', price: 50, bg: '#FFE2E8', from: 'Lv4-19～22', cards: [
+    ['Taipei 101', '台北101', '🏙️', 'Taipei 101 is a famous landmark.', '台北101是有名的地標。'],
+    ['night market', '夜市', '🏮', 'I like night markets very much.', '我非常喜歡夜市。'],
+    ['bubble tea', '珍珠奶茶', '🧋', 'Bubble tea is very popular in Taiwan.', '珍珠奶茶在台灣很受歡迎。'],
+    ['Chikan Tower', '赤崁樓', '🏯', 'Chikan Tower is in Tainan.', '赤崁樓在台南。'],
+    ['farmer', '農夫', '🧑‍🌾', 'Farmers work very hard.', '農夫非常辛苦工作。'],
+    ['country mouse', '鄉下老鼠', '🐭', 'Marty is a country mouse.', '馬提是一隻鄉下老鼠。']] },
+];
+const ZONE = Object.fromEntries(ZONES.map(z => [z.id, z]));
+const cardId = (z, i) => `${z.id}-${i}`;
+const zoneStories = z => STORIES.filter(st => st.zone === z.id);
+const zoneOpen = z => !z.price || S.zones.includes(z.id);
+const zoneGot = z => z.cards.filter((c, i) => S.cards.includes(cardId(z, i))).length;
+function zoneLeft(z) { return z.cards.map((c, i) => cardId(z, i)).filter(id => !S.cards.includes(id)); }
+function cardOf(id) { const k = id.lastIndexOf('-'), z = ZONE[id.slice(0, k)]; return z && { z, c: z.cards[+id.slice(k + 1)] }; }
+// 收到一張卡；那區收齊就送超稀有寶箱。回傳卡片 id（那區都拿到了就回傳 null）
+function giveCard(zid) {
+  const z = ZONE[zid];
+  const left = z ? zoneLeft(z) : ZONES.filter(zoneOpen).flatMap(zoneLeft);
+  if (!left.length) return null;
+  const id = pick(left);
+  S.cards.push(id);
+  const done = cardOf(id).z;
+  if (!zoneLeft(done).length && !S.gifts.includes('zone-' + done.id)) { S.gifts.push('zone-' + done.id); S.chests.push('super'); }
+  logEvent({ type: 'card', got: id });
+  return id;
+}
+function openZone(z, how) {
+  if (S.zones.includes(z.id)) return false;
+  S.zones.push(z.id);
+  logEvent({ type: 'zone', got: z.id, how });
+  return true;
+}
+// 故事第一次讀完：打開那區＋送一張卡；回傳要在結算畫面顯示的字
+function storyZoneReward(st) {
+  const z = ZONE[st.zone];
+  if (!z) return '';
+  const opened = z.price && openZone(z, 'story');
+  const id = giveCard(z.id), c = id && cardOf(id).c;
+  return (opened ? `<br>探險地圖打開了新區域：<span class="emo">${z.e}</span> <b>${z.name}</b>！` : '')
+    + (c ? `<br>拿到動物卡：<span class="emo">${c[2]}</span> <b class="en">${esc(c[0])}</b> ${esc(c[1])}` : '');
+}
+function cardHtml(id, big) {
+  const { z, c } = cardOf(id);
+  return `<div class="zcard ${big ? 'big' : ''}" style="--zbg:${z.bg}"><span class="emo">${c[2]}</span><b class="en">${esc(c[0])}</b><span>${esc(c[1])}</span></div>`;
+}
+async function sayCard(c) { await say(c[0]); await say(c[3]); }
+
+function mapView() {
+  $app.innerHTML = '';
+  $app.appendChild(backBar('探險地圖'));
+  const total = ZONES.reduce((n, z) => n + z.cards.length, 0);
+  const card = h(`<section class="card">
+    ${buddy(`跟小羊去探險！已經收集 <b>${S.cards.length}</b> / ${total} 張卡片。<br>讀那一區的故事、玩小羊問答、開寶箱，都能拿到卡片喔！`, 'cheer')}
+    <div class="star-count"><span class="emo">⭐</span><b>${S.stars}</b></div>
+    <div class="zones"></div>
+    <div class="heard" id="msg"></div>
+  </section>`);
+  const box = card.querySelector('.zones'), msg = card.querySelector('#msg');
+  for (const z of ZONES) {
+    const open = zoneOpen(z), got = zoneGot(z), full = got === z.cards.length;
+    const b = h(`<button class="zone ${open ? '' : 'locked'} ${full ? 'full' : ''}" style="--zbg:${z.bg}">
+      <span class="emo ze">${open ? z.e : '🔒'}</span><b>${z.name}</b><span class="en zen">${esc(z.en)}</span>
+      <span class="state">${open ? `${full ? '<span class="emo">🏆</span> ' : ''}${got} / ${z.cards.length}` : `⭐ ${z.price}`}</span></button>`);
+    b.onclick = () => {
+      if (open) { sfx.tap(); return zoneView(z); }
+      const sts = zoneStories(z).map(st => `《<span class="en">${esc(st.title)}</span>》`).join('');
+      if (S.stars < z.price) {
+        wiggle(b); sfx.soft();
+        msg.innerHTML = `<span class="emo">${z.e}</span> ${z.name}要 ⭐ ${z.price} 才能打開，還差 ${z.price - S.stars} 顆。${sts && storyBox ? `<br>或是去故事屋讀完${sts}也能打開！` : ''}`;
+        return;
+      }
+      sfx.tap(); buyZone(z);
+    };
+    box.appendChild(b);
+  }
+  $app.appendChild(card);
+}
+function buyZone(z) {
+  const m = h(`<div class="overlay"><section class="card">
+    <div class="prize">${z.e}</div><h2 style="margin:0">${z.name} <span class="en">${esc(z.en)}</span></h2>
+    ${buddy(`要用 <b>⭐ ${z.price}</b> 打開這一區嗎？打開就送你第一張卡片！`, 'think')}
+    <div class="row"><button class="btn mint" id="yes">打開！<span class="emo">🗝️</span></button><button class="btn soft small" id="no">再想想</button></div>
+  </section></div>`);
+  document.body.appendChild(m);
+  m.querySelector('#no').onclick = () => { sfx.tap(); m.remove(); };
+  m.querySelector('#yes').onclick = () => {
+    if (S.stars < z.price) { m.remove(); return mapView(); }
+    sfx.fanfare(); S.stars -= z.price; openZone(z, 'stars');
+    const id = giveCard(z.id); save(); flush(); m.remove();
+    zoneView(z, id);
+  };
+}
+function zoneView(z, fresh) {
+  $app.innerHTML = '';
+  $app.appendChild(backBar(z.name, mapView));
+  const sts = storyBox ? zoneStories(z) : [];
+  const got = zoneGot(z);
+  const card = h(`<section class="card">
+    <div class="zone-head" style="--zbg:${z.bg}"><span class="emo">${z.e}</span><div><b>${z.name}</b><span class="en">${esc(z.en)}</span><small>講義 ${z.from}</small></div></div>
+    ${buddy(got === z.cards.length ? `這一區的卡片全部收齊了，好厲害！點卡片聽英文～` : `這一區有 ${z.cards.length} 張卡片，你有 <b>${got}</b> 張。點卡片會唸英文給你聽！`, 'smile')}
+    <div class="zgrid"></div>
+    <div class="bubble talk" id="talk">點一張卡片看看！</div>
+    ${QA[z.id] ? `<button class="btn butter" id="qa">小羊問答 <span class="emo">🎤</span>${S.qaDay[z.id] === today() ? '' : ' <span class="emo">🎁</span>'}</button>` : ''}
+    ${sts.length ? `<div class="heard">這一區的故事（第一次讀完送一張卡）：</div><div class="shelf zone-shelf"></div>` : ''}
+  </section>`);
+  const grid = card.querySelector('.zgrid'), talk = card.querySelector('#talk');
+  z.cards.forEach((c, i) => {
+    const id = cardId(z, i), have = S.cards.includes(id);
+    const b = h(`<button class="zcard ${have ? '' : 'empty'} ${fresh === id ? 'fresh' : ''}" style="--zbg:${z.bg}">
+      <span class="emo">${have ? c[2] : '❓'}</span><b class="en">${have ? esc(c[0]) : '???'}</b><span>${have ? esc(c[1]) : '還沒找到'}</span></button>`);
+    b.onclick = () => {
+      if (!have) { wiggle(b); sfx.soft(); talk.textContent = '這張還沒找到，讀故事或開寶箱就有機會拿到！'; return; }
+      sfx.tap();
+      talk.innerHTML = `<span class="en">${esc(c[3])}</span>${esc(c[4])}`;
+      talk.classList.remove('pop'); void talk.offsetWidth; talk.classList.add('pop');
+      pickVoice(); sayCard(c);
+    };
+    grid.appendChild(b);
+  });
+  const qb = card.querySelector('#qa');
+  if (qb) qb.onclick = () => { sfx.tap(); qaView(z); };
+  const shelf = card.querySelector('.zone-shelf');
+  for (const st of sts) {
+    const rec = S.stories[st.id];
+    const b = h(`<button class="book ${rec ? 'done' : ''}"><span class="emo">${st.e}</span><div>
+      <b class="en">${esc(st.title)}</b><span>${esc(st.zh)}</span><span class="state">${rec ? '<i class="emo">✅</i> 讀過了' : '<i class="emo">🎁</i> 讀完送卡片'}</span></div></button>`);
+    b.onclick = () => { pickVoice(); startStory(st.id); };
+    shelf.appendChild(b);
+  }
+  $app.appendChild(card);
+  if (fresh) { const c = cardOf(fresh).c; banner(`拿到新卡片：<span class="emo">${c[2]}</span> <b class="en">${esc(c[0])}</b>`); pickVoice(); sayCard(c); }
+}
+
+/* ---------- 小羊問答：說句子 ----------
+   每題同一個問題，提示會跟著「說對幾次」慢慢拿掉：
+   0 次：整句給你看（跟讀）→ 1 次：只給句型（自己填空）→ 2 次以上：只有問題（自己回答）
+   評分：k 裡每一組關鍵字都要說到（組內用 | 分隔，任一個就算），而且至少說 3 個字
+   一回 5 題；說對 4 題以上，這一區每天送一張卡 */
+const QA = {
+  earth: [
+    { q: 'Is Taiwan a big island?', qz: '台灣是一座大島嗎？', a: 'Yes, Taiwan is a big island.', f: 'Yes, Taiwan is ___.', k: ['taiwan', 'island'] },
+    { q: 'What do you see on the island?', qz: '你在島上看到什麼？', a: 'I see a mountain and a beach.', f: 'I see ___.', k: ['see', 'mountain|beach|tree|hill|cave|sand|house|castle|island'] },
+    { q: 'What animals live in a cave?', qz: '什麼動物住在洞穴裡？', a: 'Bats live in a cave.', f: '___ live in a cave.', k: ['bat', 'cave'] },
+    { q: 'Do you like hiking?', qz: '你喜歡爬山健行嗎？', a: 'Yes, I like hiking.', f: 'Yes, I ___.', k: ['like|love', 'hik'] },
+    { q: 'I am a mountain. I spurt out ash, rocks, and lava. What am I?', qz: '我是一座山，會噴出火山灰、石頭和岩漿。我是什麼？', a: 'You are a volcano.', f: 'You are a ___.', k: ['volcano'] },
+    { q: 'Why do farmers grow plants around volcanoes?', qz: '農夫為什麼在火山旁邊種東西？', a: 'Because the soil is fertile there.', f: 'Because the ___ is fertile there.', k: ['because', 'soil'] },
+    { q: 'Who bullied smaller insects?', qz: '誰欺負比較小的昆蟲？', a: 'The grasshoppers bullied smaller insects.', f: 'The ___ bullied smaller insects.', k: ['grasshopper'] },
+  ],
+  river: [
+    { q: 'Which one is bigger, a river or a stream?', qz: '河流和小溪，哪一個比較大？', a: 'A river is bigger than a stream.', f: 'A river is ___ than a stream.', k: ['river', 'bigger', 'stream'] },
+    { q: 'Which one is narrower, a river or a stream?', qz: '河流和小溪，哪一個比較窄？', a: 'A stream is narrower than a river.', f: 'A ___ is narrower than a ___.', k: ['stream', 'narrow', 'river'] },
+    { q: 'What lives in the river?', qz: '什麼住在河裡？', a: 'Fish and shrimp live in the river.', f: '___ and ___ live in the river.', k: ['fish|shrimp|otter|frog|crab|duck', 'river'] },
+    { q: 'Where do fish live?', qz: '魚住在哪裡？', a: 'Fish live in the river.', f: 'Fish live in the ___.', k: ['fish', 'river|lake|ocean|sea|pond|stream|water'] },
+    { q: 'Where does the frog live?', qz: '青蛙住在哪裡？', a: 'The frog lives in the stream.', f: 'The frog lives in the ___.', k: ['frog', 'stream|pond|river|lake|water'] },
+    { q: 'How many otters do you see?', qz: '你看到幾隻水獺？', a: 'I see three otters.', f: 'I see ___ otters.', k: ['see', 'otter'] },
+  ],
+  water: [
+    { q: 'Can you drink saltwater?', qz: '你可以喝鹹水嗎？', a: "No, I can't drink saltwater because it is too salty.", f: "No, I can't drink it because it is too ___.", k: ['drink', 'salty'] },
+    { q: 'Where do bears live, in the mountains or in the lake?', qz: '熊住在哪裡？山上還是湖裡？', a: 'Bears live in the mountains.', f: 'Bears live in the ___.', k: ['bear', 'mountain'] },
+    { q: 'What is a glacier?', qz: '冰河是什麼？', a: 'A glacier is a river of ice.', f: 'A glacier is a river of ___.', k: ['river', 'ice'] },
+    { q: 'Where do you think crocodiles live?', qz: '你覺得鱷魚住在哪裡？', a: 'I think crocodiles live in the river.', f: 'I think crocodiles live in the ___.', k: ['think', 'crocodile', 'river|lake|pond|water'] },
+    { q: 'What did they eat on the hill?', qz: '他們在山丘上吃了什麼？', a: 'They had sandwiches on the hill.', f: 'They had ___ on the hill.', k: ['sandwich'] },
+    { q: 'How do you get home?', qz: '你怎麼回家？', a: 'I get home by MRT.', f: 'I get home by ___.', k: ['home', 'by|walk'] },
+    { q: 'When do you go to school?', qz: '你幾點去上學？', a: 'I go to school at seven in the morning.', f: 'I go to school at ___.', k: ['school', 'at|in'] },
+  ],
+  plains: [
+    { q: 'I am the largest animal on the plains. I have a long nose and big ears. What am I?', qz: '我是草原上最大的動物，有長鼻子和大耳朵。我是什麼？', a: 'You are an elephant.', f: 'You are an ___.', k: ['elephant'] },
+    { q: 'Which animal do you like the most?', qz: '你最喜歡哪一種動物？', a: 'I like zebras the most.', f: 'I like ___ the most.', k: ['like|love'] },
+    { q: 'Why does Hans go to the zoo often?', qz: '漢斯為什麼常常去動物園？', a: 'Hans goes to the zoo often because he likes animals.', f: 'Hans goes to the zoo often because ___.', k: ['because', 'animal'] },
+    { q: 'How could Hans see the sleeping leopard?', qz: '漢斯怎麼看到睡覺的花豹？', a: 'His dad put him on his shoulders.', f: 'His dad put him on his ___.', k: ['dad|father', 'shoulder'] },
+    { q: 'What was the antelope doing?', qz: '羚羊在做什麼？', a: 'The antelope was drinking water.', f: 'The antelope was ___.', k: ['was', 'drinking|sleeping|eating|running'] },
+    { q: 'Why did the animals run away?', qz: '動物們為什麼逃跑？', a: 'They were afraid of being eaten.', f: 'They were afraid of ___.', k: ['afraid|scared'] },
+    { q: 'Who said yes to the elephant?', qz: '誰答應當大象的朋友？', a: 'The leopard said yes.', f: 'The ___ said yes.', k: ['leopard', 'yes'] },
+  ],
+  mountain: [
+    { q: 'Why do monkeys live in the mountains?', qz: '猴子為什麼住在山上？', a: 'Because there are many trees for them to swing around.', f: 'Because there are many ___.', k: ['because', 'tree'] },
+    { q: 'What does a deer eat?', qz: '鹿吃什麼？', a: 'A deer eats grass.', f: 'A deer eats ___.', k: ['deer', 'grass'] },
+    { q: 'Which animal likes to eat bananas?', qz: '哪種動物喜歡吃香蕉？', a: 'Monkeys like to eat bananas.', f: '___ like to eat bananas.', k: ['monkey', 'banana'] },
+    { q: 'What were the bears doing in the river?', qz: '熊在河裡做什麼？', a: 'The bears were catching fish.', f: 'The bears were ___.', k: ['bear', 'fish'] },
+    { q: 'Why do bears sleep all winter?', qz: '熊為什麼整個冬天都在睡覺？', a: 'Because it is so cold in the winter.', f: 'Because it is so ___ in the winter.', k: ['because', 'cold'] },
+    { q: 'When you go hiking, what animals do you want to see?', qz: '去爬山的時候，你想看到什麼動物？', a: 'I want to see monkeys and deer.', f: 'I want to see ___.', k: ['want', 'see'] },
+  ],
+  desert: [
+    { q: 'Why can camels live in the desert?', qz: '駱駝為什麼能住在沙漠？', a: "Camels can live in the desert because they don't need much water.", f: 'Camels can live in the desert because ___.', k: ['because', 'water'] },
+    { q: 'How is the weather in the desert?', qz: '沙漠的天氣怎麼樣？', a: 'It is hot during the day and cold at night.', f: 'It is ___ during the day and ___ at night.', k: ['hot', 'cold'] },
+    { q: 'I live in the desert. I have eight legs, two claws, and one long tail. What am I?', qz: '我住在沙漠，有八隻腳、兩隻鉗子和一條長尾巴。我是什麼？', a: 'You are a scorpion.', f: 'You are a ___.', k: ['scorpion'] },
+    { q: 'What do scorpions eat?', qz: '蠍子吃什麼？', a: 'Scorpions eat bugs and rats.', f: 'Scorpions eat ___.', k: ['eat', 'bug|rat|insect|mice|mouse'] },
+    { q: 'Why is Captain Oz scared?', qz: '奧茲隊長為什麼害怕？', a: 'He is scared because he saw a big snake.', f: 'He is scared because ___.', k: ['because', 'snake'] },
+    { q: 'What lives in the desert?', qz: '什麼住在沙漠裡？', a: 'Camels, snakes, and scorpions live in the desert.', f: '___ live in the desert.', k: ['camel|snake|scorpion|lizard|cactus', 'desert'] },
+  ],
+  ocean: [
+    { q: 'I can swim fast and jump out of the sea. I am very smart. What am I?', qz: '我游得快、會跳出海面，而且很聰明。我是什麼？', a: 'You are a dolphin.', f: 'You are a ___.', k: ['dolphin'] },
+    { q: 'I am a mammal. I have a blowhole on top of my head. I am very big. What am I?', qz: '我是哺乳動物，頭頂有噴氣孔，非常大。我是什麼？', a: 'You are a whale.', f: 'You are a ___.', k: ['whale'] },
+    { q: "Why don't dolphins drink seawater?", qz: '海豚為什麼不喝海水？', a: 'Because it is too salty.', f: 'Because it is too ___.', k: ['because', 'salty'] },
+    { q: 'What was the dolphin doing?', qz: '海豚在做什麼？', a: 'The dolphin was jumping out of the sea.', f: 'The dolphin was ___.', k: ['dolphin', 'jump|swim|eat|play'] },
+    { q: 'Who is at the top of the ocean food chain?', qz: '誰在海洋食物鏈的最上面？', a: 'Sharks are at the top of the food chain.', f: '___ are at the top of the food chain.', k: ['shark', 'top'] },
+    { q: 'What did Simon the shark really want?', qz: '鯊魚賽門其實想要什麼？', a: 'Simon wanted to be friends with Hank.', f: 'Simon wanted to be ___ with Hank.', k: ['friend'] },
+    { q: 'Have you ever seen dolphins?', qz: '你看過海豚嗎？', a: 'Yes, I have seen dolphins.', f: 'Yes, I have ___.', k: ['seen|saw|see|never', 'dolphin'] },
+  ],
+  wetland: [
+    { q: 'Where do frogs and turtles live?', qz: '青蛙和烏龜住在哪裡？', a: 'They live both on the land and in the water.', f: 'They live both on the ___ and in the ___.', k: ['land', 'water'] },
+    { q: 'What do frogs eat?', qz: '青蛙吃什麼？', a: 'Frogs eat flies and mosquitoes.', f: 'Frogs eat ___.', k: ['frog', 'flies|fly|mosquito|insect|bug'] },
+    { q: 'Can turtles jump high?', qz: '烏龜會跳很高嗎？', a: 'No, turtles can barely jump.', f: 'No, turtles ___.', k: ['turtle', 'jump'] },
+    { q: 'Why do hippos like to stay in the water?', qz: '河馬為什麼喜歡待在水裡？', a: 'Because it helps them keep cool.', f: 'Because it helps them keep ___.', k: ['because', 'cool'] },
+    { q: 'Do you and your mom both like swimming?', qz: '你和媽媽都喜歡游泳嗎？', a: 'Yes, my mom and I both like swimming.', f: 'Yes, my mom and I both ___.', k: ['both', 'like|love'] },
+    { q: 'Would you like to be an aquatic or a semi-aquatic animal?', qz: '你想當水生動物還是半水生動物？', a: 'I would like to be a semi-aquatic animal.', f: 'I would like to be ___.', k: ['like', 'animal|aquatic'] },
+  ],
+  taiwan: [
+    { q: 'What is the capital of Taiwan?', qz: '台灣的首都是哪裡？', a: 'The capital of Taiwan is Taipei.', f: 'The capital of Taiwan is ___.', k: ['capital', 'taipei'] },
+    { q: 'What is a famous landmark of Taipei?', qz: '台北有名的地標是什麼？', a: 'It is Taipei 101.', f: 'It is ___.', k: ['taipei'] },
+    { q: 'Which city do you live in?', qz: '你住在哪個城市？', a: 'I live in Taipei.', f: 'I live in ___.', k: ['live', 'in'] },
+    { q: 'Where is Chikan Tower?', qz: '赤崁樓在哪裡？', a: 'Chikan Tower is in Tainan.', f: 'Chikan Tower is in ___.', k: ['tainan|tai nan'] },
+    { q: 'Would you like to live in a city or a village?', qz: '你想住在城市還是村莊？', a: 'I would like to live in a city.', f: 'I would like to live in ___.', k: ['live', 'city|village|country'] },
+    { q: 'Do you like night markets?', qz: '你喜歡夜市嗎？', a: 'Yes, I like night markets very much.', f: 'Yes, I like ___.', k: ['like|love', 'market'] },
+    { q: 'Why did Marty, the country mouse, go home?', qz: '鄉下老鼠馬提為什麼回家？', a: 'He wanted to eat his dinner in peace.', f: 'He wanted to eat his dinner ___.', k: ['dinner|eat', 'peace'] },
+  ],
+};
+const QA_N = 5, QA_PASS = 4;
+const qaId = (zid, i) => `${zid}.${i}`;
+const qaLv = id => Math.min(2, S.qa[id] || 0);
+// 關鍵字：說出的字以它開頭（bats→bat），或長字差一個字母以內都算
+function qaJudge(alts, item) {
+  let best = 0;
+  for (const a of alts) {
+    const got = norm(a).split(' ').filter(Boolean), text = ' ' + got.join(' ') + ' ';
+    const hit = item.k.filter(g => g.split('|').some(k => k.includes(' ') ? text.includes(' ' + k + ' ')
+      : got.some(w => w.startsWith(k) || (k.length > 4 && lev(w, k) <= 1)))).length;
+    const score = hit / item.k.length * (got.length >= 3 ? 1 : 0.6);
+    best = Math.max(best, score);
+  }
+  return best;
+}
+// 填空句型：___ 換成虛線格子
+const qaFrame = f => esc(f).replace(/___([.?!,]?)/g, '<span class="nowrap"><span class="blank">　　　</span>$1</span>');
+
+function qaView(z) {
+  $app.innerHTML = '';
+  $app.appendChild(backBar(`小羊問答・${z.name}`, () => zoneView(z)));
+  const list = QA[z.id] || [];
+  const lv = [0, 0, 0];
+  list.forEach((x, i) => lv[qaLv(qaId(z.id, i))]++);
+  const gave = S.qaDay[z.id] === today();
+  const card = h(`<section class="card">
+    ${buddy(`小羊會用英文問你問題，你用英文說一整句回答！<br>同一題說對越多次，提示就越少喔。`, 'cheer')}
+    <div class="qa-steps">
+      <div class="qa-step"><span class="emo">👀</span><b>跟著說</b><span>整句給你看</span><em>${lv[0]} 題</em></div>
+      <div class="qa-step"><span class="emo">🧩</span><b>填空說</b><span>只給句型</span><em>${lv[1]} 題</em></div>
+      <div class="qa-step"><span class="emo">🗣️</span><b>自己說</b><span>只有問題</span><em>${lv[2]} 題</em></div>
+    </div>
+    <div class="heard">${gave ? '今天這一區的卡片已經送過了，再練一樣可以拿星星！' : `一回 ${QA_N} 題，說對 ${QA_PASS} 題以上送你一張${z.name}的卡片！`}</div>
+    ${srOff ? '<div class="heard">這台裝置不能用語音辨識，會改成「說完按我說好了」，請大人在旁邊聽喔。</div>' : ''}
+    <button class="btn big" id="go">開始問答 <span class="emo">🎤</span></button>
+  </section>`);
+  card.querySelector('#go').onclick = () => { sfx.tap(); pickVoice(); qaRound(z); };
+  $app.appendChild(card);
+}
+// 挑題：還沒練熟的優先，再打亂
+function qaRound(z) {
+  const list = QA[z.id].map((x, i) => ({ x, id: qaId(z.id, i) }));
+  const picks = shuffle(list).sort((a, b) => qaLv(a.id) - qaLv(b.id)).slice(0, QA_N);
+  const r = { z, picks, i: 0, ok: 0, stars: 0, sid: uid() };
+  logEvent({ type: 'qa-start', sid: r.sid, got: z.id });
+  qaAsk(r);
+}
+function qaAsk(r) {
+  const { x, id } = r.picks[r.i], lv = qaLv(id);
+  let tries = 0, passed = false, hinted = false;
+  $app.innerHTML = '';
+  $app.appendChild(backBar(`小羊問答・${r.z.name}`, () => qaView(r.z)));
+  const help = lv === 0 ? `<div class="row"><div class="sentence qa-ans">${esc(x.a)}</div><button class="icon-btn" id="ans" aria-label="聽答案"><span class="emo">👂</span></button></div><div class="zh">先聽一次答案，再照著說！</div>`
+    : lv === 1 ? `<div class="sentence qa-ans">${qaFrame(x.f)}</div><div class="zh">把空格填進去，說一整句！</div>`
+    : `<button class="btn soft small" id="hint">給我提示 <span class="emo">💡</span></button><div id="hintbox"></div>`;
+  const card = h(`<section class="card">
+    <div class="prompt"><span class="tag">${['跟著說', '填空說', '自己說'][lv]}</span> 第 ${r.i + 1} / ${r.picks.length} 題</div>
+    <div class="buddy">${lamb('think')}<div class="bubble"><span class="en qa-q">${esc(x.q)}</span><span class="zh">${esc(x.qz)}</span></div></div>
+    <div class="row"><button class="icon-btn" id="sp" aria-label="再聽一次問題"><span class="emo">🔊</span></button>
+      <button class="icon-btn" id="slow" aria-label="慢慢唸"><span class="emo">🐢</span></button></div>
+    ${help}
+    ${speakBlock()}
+    <div class="row" id="nx"></div>
+  </section>`);
+  $app.appendChild(card);
+  const mic = card.querySelector('#mic'), heard = card.querySelector('#heard'), st = card.querySelector('#sstars'), nx = card.querySelector('#nx');
+  card.querySelector('#sp').onclick = () => say(x.q);
+  card.querySelector('#slow').onclick = () => say(x.q, true);
+  const ab = card.querySelector('#ans');
+  if (ab) ab.onclick = () => say(x.a, true);
+  const hb = card.querySelector('#hint');
+  if (hb) hb.onclick = () => { sfx.tap(); hinted = true; hb.remove(); card.querySelector('#hintbox').innerHTML = `<div class="sentence qa-ans">${qaFrame(x.f)}</div>`; };
+  const showNext = () => {
+    if (nx.children.length) return;
+    const b = h(`<button class="btn ${passed ? '' : 'soft'}">${r.i + 1 < r.picks.length ? '下一題' : '看結果'} <span class="emo">➡️</span></button>`);
+    b.onclick = () => { sfx.tap(); r.i++; r.i < r.picks.length ? qaAsk(r) : qaDone(r); };
+    nx.appendChild(b);
+  };
+  const win = (how) => {
+    passed = true; r.ok++;
+    const add = lv === 2 && !hinted ? 3 : lv === 1 || hinted ? 2 : 1;   // 越少提示星星越多
+    r.stars += add; S.stars += add;
+    S.qa[id] = (S.qa[id] || 0) + 1;
+    save(); refreshStars();
+    mission('saySent');
+    st.innerHTML = '⭐'.repeat(add);
+    heard.innerHTML = `${pick(CHEERS)} +${add} <span class="emo">⭐</span><br><span class="en">${esc(x.a)}</span>`;
+    sfx.yay(); burstAt(mic);
+    logEvent({ type: 'qa', sid: r.sid, id, got: how, lv, tries, hinted });
+    showNext();
+  };
+  if (srOff) {
+    mic.innerHTML = '<span class="emo">🙋</span>'; mic.setAttribute('aria-label', '我說好了');
+    heard.textContent = '用英文說一整句，說完按我！';
+    mic.onclick = () => { if (!passed) win('self'); };
+  } else {
+    mic.onclick = async () => {
+      if (passed || mic.classList.contains('listening')) return;
+      mic.classList.add('listening'); heard.textContent = '小羊在聽……';
+      const res = await listen();
+      if (!document.body.contains(mic)) return;
+      mic.classList.remove('listening');
+      if (res.error) {
+        if (srOff) { heard.textContent = '麥克風沒辦法用，說完按 🙋 就好！'; mic.innerHTML = '<span class="emo">🙋</span>'; mic.onclick = () => { if (!passed) win('self'); }; return; }
+        heard.textContent = res.error === 'no-speech' ? '沒聽到聲音耶，大聲一點點再試一次～' : '再按一次麥克風試試看～';
+        return;
+      }
+      tries++;
+      const score = qaJudge(res.alts, x);
+      if (score >= 1) return win(res.alts[0]);
+      logEvent({ type: 'qa-miss', sid: r.sid, id, got: res.alts[0], lv });
+      sfx.soft();
+      if (tries >= 3) {
+        heard.innerHTML = `沒關係！小羊教你：<br><span class="en">${esc(x.a)}</span>`;
+        say(x.a); showNext();
+      } else {
+        heard.innerHTML = `我聽到「<span class="en">${esc(res.alts[0])}</span>」<br>${score > 0 ? '快對了！' : ''}要說一整句喔，再試一次～${tries === 2 && lv > 0 ? `<br>提示：<span class="en">${qaFrame(x.f)}</span>` : ''}`;
+      }
+    };
+  }
+  say(x.q);
+}
+function qaDone(r) {
+  const t = today(), good = r.ok >= QA_PASS;
+  let cid = null;
+  if (good && S.qaDay[r.z.id] !== t) { cid = giveCard(r.z.id); if (cid) S.qaDay[r.z.id] = t; }
+  save(); flush();
+  logEvent({ type: 'qa-end', sid: r.sid, got: r.z.id, ok: r.ok, n: r.picks.length, card: cid });
+  const c = cid && cardOf(cid).c;
+  $app.innerHTML = '';
+  const card = h(`<section class="card">
+    <div class="hero">${lamb(good ? 'cheer' : 'smile')}<h1>${good ? `說得好棒，${NAME}！` : `好勇敢，${NAME}！`}</h1></div>
+    <div class="result-stats"><div class="stat"><b>${r.ok}</b>說對</div><div class="stat"><b>${r.picks.length}</b>題</div><div class="stat"><b>${r.stars}</b>得到星星</div></div>
+    ${c ? `${cardHtml(cid, true)}${buddy(`說對 ${r.ok} 題，送你一張卡片：<b class="en">${esc(c[0])}</b> ${esc(c[1])}！`, 'wow')}`
+      : good ? buddy(S.qaDay[r.z.id] === t ? '今天這一區的卡片拿過了，明天再來拿新的！' : '這一區的卡片都收齊了！', 'smile')
+      : buddy(`說對 ${QA_PASS} 題就能拿卡片，再來一次吧！`, 'think')}
+    <div class="home-actions" id="acts"></div>
+  </section>`);
+  const acts = card.querySelector('#acts');
+  const again = h(`<button class="btn mint">再來一回 <span class="emo">🎤</span></button>`);
+  again.onclick = () => { sfx.tap(); qaRound(r.z); };
+  const back = h(`<button class="btn soft">回${r.z.name} <span class="emo">${r.z.e}</span></button>`);
+  back.onclick = () => { sfx.tap(); zoneView(r.z); };
+  acts.append(again, back);
+  if (S.chests.length) {
+    const b = h(`<button class="btn soft">打開寶箱 <span class="emo">🎁</span></button>`);
+    b.onclick = () => { sfx.tap(); openChest(null, () => qaDone2(r.z)); };
+    acts.appendChild(b);
+  }
+  $app.appendChild(card);
+  if (good) { sfx.fanfare(); setTimeout(() => burst(innerWidth / 2, innerHeight / 3, ['🎉', '⭐', '🗣️', '🐑', '🌟']), 150); }
+  if (c) { pickVoice(); sayCard(c); }
+}
+const qaDone2 = z => zoneView(z);
 
 /* ---------- 開始 ---------- */
 restoreIfEmpty().then(loadStories).then(() => {
