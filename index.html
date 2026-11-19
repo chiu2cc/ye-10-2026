@@ -544,6 +544,26 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
 .pass:focus { outline: none; box-shadow: inset 0 0 0 3px var(--water-deep); }
 .vw { background: linear-gradient(transparent 55%, #FFE07A 55%); color: inherit; padding: 0 2px; border-radius: 4px; cursor: pointer; }
 
+/* ---------- 造句、造句本、小羊老師的回信 ---------- */
+.make-box { font: inherit; font-family: var(--font-en); font-size: clamp(22px, 3.6vw, 28px); line-height: 1.45; width: min(100%, 640px);
+  padding: 12px 16px; border: 0; border-radius: 20px; background: #fff; box-shadow: inset 0 0 0 3px var(--line); color: var(--ink);
+  resize: none; user-select: text; -webkit-user-select: text; }
+.make-box:focus { outline: none; box-shadow: inset 0 0 0 3px var(--water-deep); }
+.make-box[readonly] { background: #FFF6D8; box-shadow: inset 0 0 0 3px var(--butter); }
+.notes { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 680px; text-align: left; }
+.note { background: #fff; border-radius: 20px; padding: 12px 16px; box-shadow: 0 4px 0 var(--line), inset 0 0 0 3px var(--line); display: flex; flex-direction: column; gap: 6px; }
+.note.gold { background: linear-gradient(160deg, #FFF8DC, #FFEFA8); box-shadow: 0 4px 0 var(--butter-deep), inset 0 0 0 3px #F5C842; }
+.nhead { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 16px; color: var(--ink-soft); }
+.nhead b { font-size: 20px; color: var(--cocoa); }
+.nstate { margin-left: auto; font-weight: 700; color: var(--ink); }
+.ntext { font-size: clamp(20px, 3.4vw, 25px); line-height: 1.4; }
+.nfix { font-size: clamp(19px, 3.2vw, 23px); line-height: 1.4; }
+.nfix mark { background: linear-gradient(transparent 55%, #FFE07A 55%); color: inherit; padding: 0 2px; border-radius: 4px; }
+.ntip { font-size: 18px; color: var(--ink-soft); }
+.note .row { justify-content: flex-start; }
+.note .icon-btn { width: 48px; height: 48px; font-size: 22px; }
+.overlay .card.scroll { max-height: calc(100dvh - 32px); overflow-y: auto; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -616,6 +636,7 @@ function blankState() {
     bosses: [], coupons: [], msgSeen: '', daily: null, gifts: [], stories: {},
     zones: ['earth'], cards: [],   // 探險地圖：打開的區域、收集到的動物卡
     qa: {}, qaDay: {},             // 小羊問答：每題說對幾次（決定提示多少）、每區今天送過卡沒
+    make: {}, notes: [],           // 造句：每個字造過幾句（決定提示多少）、造句本（含小羊老師的批改）
     syncLog: [],     // 最近 20 次送資料的結果，跟著進度一起上傳，查「為什麼沒送上來」用
     pending: null,   // 練到一半關掉時的進度，下次打開時補記
   };
@@ -1068,6 +1089,7 @@ const MISSIONS = {
   spell: ['拼字一次答對 4 個', 4, '🔤'],
   first: ['一次答對 12 題', 12, '🎯'],
   order: ['排對 2 個句子', 2, '🧩'],
+  make: ['自己造 1 個句子', 1, '✏️'],
   rescue: ['救出 1 隻小動物', 1, '🚑'],
   bonus: ['玩一次獎勵關', 1, '🏃'],
 };
@@ -1135,7 +1157,7 @@ const DEFAULT_COUPONS = [
   { name: '今晚不用洗碗', stars: 200, e: '🍽️' },
   { name: '週末選一部電影', stars: 250, e: '🎬' },
 ];
-let REMOTE = { coupons: null, message: '' };
+let REMOTE = { coupons: null, message: '', reviews: [] };
 try { Object.assign(REMOTE, JSON.parse(localStorage.getItem(LS_KEY + '-cfg')) || {}); } catch (e) {}
 const coupons = () => (REMOTE.coupons && REMOTE.coupons.length ? REMOTE.coupons : DEFAULT_COUPONS);
 async function loadRemote() {
@@ -1144,7 +1166,8 @@ async function loadRemote() {
     const r = await fetch(`${CFG.progressUrl}?action=config&key=${encodeURIComponent(CFG.key)}`);
     const j = await r.json();
     if (j && j.ok && ('coupons' in j || 'message' in j)) {
-      REMOTE = { coupons: j.coupons || null, message: String(j.message || '').trim() };
+      // reviews：小羊老師（Claude）批改的造句，試算表 review 分頁；舊版 Apps Script 沒有這一欄就留著上次的
+      REMOTE = { coupons: j.coupons || null, message: String(j.message || '').trim(), reviews: j.reviews || REMOTE.reviews || [] };
       try { localStorage.setItem(LS_KEY + '-cfg', JSON.stringify(REMOTE)); } catch (e) {}
     }
   } catch (e) {}
@@ -1372,6 +1395,7 @@ function addNewBatch() {
   shuffle(batch).forEach(w => ses.queue.push({ t: w.sp ? 'spell' : 'listen', w }));
   shuffle(batch).forEach((w, i) => ses.queue.push({ t: (i % 2 === 0 && w.s.split(' ').length <= 10) ? 'order' : 'sentMean', w }));
   shuffle(batch).filter(w => w.s.split(' ').length <= 9).slice(0, 2).forEach(w => ses.queue.push({ t: 'saySent', w }));
+  ses.queue.push(...queueMake(batch.map(w => w.id)));
   ses.queue.push({ t: 'retry', ids: batch.map(w => w.id) });
   ses.queue.push({ t: 'more' });
   return true;
@@ -1386,7 +1410,18 @@ function queueReview(ids, text, extra) {
     const w = BY_ID[id];
     return { t: pick(w.sp ? ['meaning', 'spell', 'spell', 'sentMean'] : ['meaning', 'listen', 'sentMean']), w };
   });
-  ses.queue.push({ t: 'note', text, mood: extra ? 'cheer' : 'smile' }, ...shuffle(qs), { t: 'more' });
+  ses.queue.push({ t: 'note', text, mood: extra ? 'cheer' : 'smile' }, ...shuffle(qs), ...queueMake(ids), { t: 'more' });
+}
+// 造句：一批字裡挑一個來造句。造過的字優先（往下一級升），一次練習最多 MAKE_MAX 句，同一個字不重複
+function queueMake(ids) {
+  if (!ses || ses.mode !== 'normal' || (ses.makes || 0) >= MAKE_MAX) return [];
+  const made = S.make || {}, used = ses.makeIds || [];
+  const cand = shuffle(ids.map(id => BY_ID[id]).filter(w => w && (made[w.id] || 0) < 3 && !used.includes(w.id) && w.s.split(' ').length <= 14))
+    .sort((a, b) => (made[b.id] || 0) - (made[a.id] || 0));
+  if (!cand.length) return [];
+  ses.makes = (ses.makes || 0) + 1;
+  ses.makeIds = used.concat(cand[0].id);
+  return [{ t: 'make', w: cand[0] }];
 }
 // 還沒排進這次練習的到期字（一次只排 MAX_REVIEW 個，所以要分批補，不然到期的字會越積越多）
 function addReviewBatch() {
@@ -1479,7 +1514,7 @@ function next() {
   // 複習到很熟（第 4 盒以上）的字，拼字改成大師級：沒有字母磚，自己打
   const master = step.t === 'spell' && ses.mode !== 'rescue' && S.words[step.w.id] && S.words[step.w.id].box >= 4;
   ({ note: viewNote, intro: viewIntro, meaning: viewMeaning, listen: viewListen, spell: master ? viewSpellMaster : viewSpell,
-    sentMean: viewSentMean, order: viewOrder, saySent: viewSaySent, boss: viewBoss, page: viewPage, storyQ: viewStoryQ }[step.t])(step);
+    sentMean: viewSentMean, order: viewOrder, saySent: viewSaySent, make: viewMake, boss: viewBoss, page: viewPage, storyQ: viewStoryQ }[step.t])(step);
 }
 
 /* ---------- 版面骨架 ---------- */
@@ -1851,6 +1886,101 @@ function viewSaySent(step) {
   wireSpeak(card, step, w.s, 'sentence');
   nextBtn(card, '下一題');
   say(w.s);
+}
+
+/* ---------- 造句：用學過的字自己造一個句子 ----------
+   同一個字造過幾句，提示就少一點（S.make 記句數）：
+   0 句：照樣造句（例句放進框框，換掉一兩個字）→ 1 句：看中文寫英文 → 2 句：自己造句（只有字和意思）；造滿 3 句就不再排
+   網頁只看「有用到這個字、字數夠、不是照抄」；句子收進造句本，小羊老師（Claude）批改後從試算表 review 分頁寄回來 */
+const MAKE_MAX = 2;   // 一次練習最多造幾句（打字比較花時間）
+const makeLv = id => Math.min(2, (S.make && S.make[id]) || 0);
+const MAKE_CHEERS = ['自己造的句子，好厲害！', '好有創意的句子！', '陽寶會造句了！', '寫得好棒！'];
+// 說到這個字就算：runs、making、carried、ran 都算用到 run／make／carry
+function stemHit(g, k) {
+  if (g === k || g.startsWith(k)) return true;
+  if (k.length > 3 && k.endsWith('e') && g.startsWith(k.slice(0, -1))) return true;
+  if (k.length > 3 && k.endsWith('y') && g.startsWith(k.slice(0, -1) + 'i')) return true;
+  return k.length > 4 ? lev(g, k) <= 1 : g.length >= 3 && g[0] === k[0] && lev(g, k) <= 1;
+}
+function hasWord(text, word) {
+  const got = norm(text).split(' ').filter(Boolean);
+  return norm(word).split(' ').filter(Boolean).every(k => got.some(g => stemHit(g, k)));
+}
+function viewMake(step) {
+  const w = step.w, lv = makeLv(w.id), model = norm(w.s), minN = lv === 2 ? 5 : 4;
+  const guide = lv === 0
+    ? `<div class="row"><div class="sentence">${hilite(w.s, w.w)}</div><button class="icon-btn" id="sp" aria-label="聽例句"><span class="emo">🔊</span></button></div>
+       <div class="zh">${esc(w.z)}</div>
+       ${buddy(`把小羊的句子改一改，變成<b>你自己的句子</b>！<br>黃色的 <b class="en">${esc(w.w)}</b> 留著，換掉其他一兩個字就好。`, 'cheer')}`
+    : lv === 1
+    ? `<div class="emoji-big">${w.e}</div><div class="zh" style="color:var(--ink)">${esc(w.z)}</div>
+       ${buddy(`用英文寫出這句話，裡面要有 <b class="en">${esc(w.w)}</b>（${esc(w.g)}）！`, 'think')}
+       <button class="btn soft small" id="hint">給我提示 <span class="emo">💡</span></button><div class="heard" id="hintbox"></div>`
+    : `<div class="emoji-big">${w.e}</div><div class="word">${esc(w.w)}</div><div class="gloss">${esc(w.g)}</div>
+       ${buddy('用這個字，<b>自己</b>造一個句子！<br>可以想想：誰？在哪裡？做什麼？什麼時候？', 'think')}
+       <button class="btn soft small" id="hint">看小羊的例句 <span class="emo">💡</span></button><div class="heard" id="hintbox"></div>`;
+  const card = frame(`
+    <div class="prompt"><span class="tag">${['照樣造句', '看中文寫英文', '自己造句'][lv]}</span> 用 <b class="en">${esc(w.w)}</b> 造句</div>
+    ${guide}
+    <textarea class="make-box" id="box" rows="3" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="sentences" placeholder="在這裡打英文句子……"></textarea>
+    <div class="row"><button class="icon-btn" id="hear" aria-label="聽我寫的句子"><span class="emo">👂</span></button>
+      <button class="btn mint" id="send">寫好了 <span class="emo">✏️</span></button></div>
+    <div class="heard" id="msg"></div>
+  `);
+  const box = card.querySelector('#box'), msg = card.querySelector('#msg'), send = card.querySelector('#send');
+  let tries = 0, hint = 0, done = false;
+  if (lv === 0) box.value = w.s;
+  box.addEventListener('input', () => { idleAt = Date.now(); });
+  const sp = card.querySelector('#sp');
+  if (sp) sp.onclick = () => say(w.s);
+  card.querySelector('#hear').onclick = () => { const t = box.value.trim(); if (t) say(t); };
+  const hb = card.querySelector('#hint');
+  if (hb) hb.onclick = () => {
+    sfx.tap(); hint++;
+    const hbx = card.querySelector('#hintbox'), toks = w.s.split(' ');
+    if (lv === 1 && hint === 1) {
+      hbx.innerHTML = `開頭可以這樣寫：<span class="en">${esc(toks.slice(0, Math.max(2, Math.ceil(toks.length / 3))).join(' '))} ……</span>`;
+      hb.innerHTML = '再給我提示 <span class="emo">💡</span>';
+    } else {
+      hbx.innerHTML = `<div class="sentence">${hilite(w.s, w.w)}</div>${lv === 2 ? '看完了，換成你自己的句子喔！' : ''}`;
+      hb.remove();
+    }
+  };
+  send.onclick = () => {
+    if (done) return;
+    const text = box.value.replace(/\s+/g, ' ').trim(), toks = norm(text).split(' ').filter(Boolean);
+    let why = '';
+    if (/[㐀-鿿]/.test(text)) why = '用英文寫喔～';
+    else if (!toks.length) why = '先在框框裡打一個英文句子喔～';
+    else if (!hasWord(text, w.w)) why = `句子裡要用到 <b class="en">${esc(w.w)}</b> 喔！`;
+    else if (toks.length < minN) why = `再多寫幾個字，至少 ${minN} 個字喔～`;
+    else if (lv !== 1 && toks.join(' ') === model) why = lv === 0 ? '跟小羊的句子一模一樣耶～換掉一個字試試看！' : '這是小羊的句子喔，換成你自己的吧！';
+    if (why) {
+      sfx.soft(); wiggle(box); msg.innerHTML = why;
+      if (text) { tries++; logEvent({ type: 'makeTry', sid: ses.sid, id: w.id, w: w.w, task: 'lv' + lv, got: text }); }
+      return;
+    }
+    done = true; tries++;
+    box.readOnly = true; send.remove();
+    const add = Math.max(1, [1, 2, 3][lv] - (hint ? 1 : 0));
+    gainStar(add); mission('make');
+    S.make = S.make || {}; S.make[w.id] = (S.make[w.id] || 0) + 1;
+    const eid = uid(), mt = model.split(' ');
+    const same = lv === 1 && mt.filter(t => toks.includes(t)).length / mt.length >= 0.8;
+    S.notes = (S.notes || []).concat([{ eid, id: w.id, w: w.w, lv, text, at: new Date().toISOString(), hint }]).slice(-400);
+    save();
+    logEvent({ eid, type: 'make', sid: ses.sid, id: w.id, w: w.w, u: w.u, task: 'lv' + lv, first: tries === 1 && !hint, tries, got: text });
+    sfx.yay(); burstAt(box, ['✏️', '⭐', '🌟', '💖']);
+    const tips = [];
+    if (/^[a-z]/.test(text)) tips.push('句子第一個字母要大寫');
+    if (!/[.!?]["')]?$/.test(text)) tips.push('最後要加句點「.」');
+    msg.innerHTML = `<b>${same ? '跟小羊想的一樣！' : pick(MAKE_CHEERS)}</b> +${add} <span class="emo">⭐</span><br>`
+      + (tips.length ? `小提醒：${tips.join('、')}喔！<br>` : '')
+      + '句子收進<b>造句本</b>了，小羊老師看完會寄回信給你 <span class="emo">✉️</span>';
+    say(text);
+    nextBtn(card);
+  };
+  if (lv === 0) say(w.s);
 }
 
 // 大師級拼字：只有鍵盤，提示規則跟字母磚一樣（第 1 次錯放好第一個字母、第 2 次放好一半、第 3 次公布）
@@ -2419,6 +2549,7 @@ function home() {
   const hour = new Date().getHours();
   const hi = hour < 11 ? '早安' : hour < 18 ? '午安' : '晚安';
   const st = streak(), nx = nextGrow(), resc = rescueList().length, doneToday = S.days.includes(today());
+  document.querySelectorAll('.overlay').forEach(o => { if (o.querySelector('.envelope')) o.remove(); });   // 重畫首頁時收掉還沒打開的信封，等一下重新判斷要送哪一封
   const se = season(), boss = u == null ? pendingBoss() : null;
   const golds = Object.values(S.words).filter(r => r.box >= 4).length;
   seasonGift();
@@ -2446,6 +2577,7 @@ function home() {
       <button class="btn soft small" id="shop"><span class="emo">👗</span> 小羊衣櫥</button>
       <button class="btn soft small" id="rescue"><span class="emo">🚑</span> 救援站${resc ? ` <b class="en">${resc}</b>` : ''}</button>
       <button class="btn soft small" id="dex"><span class="emo">🃏</span> 單字圖鑑 <b class="en">${golds}</b><span class="emo">✨</span></button>
+      <button class="btn soft small" id="notes"><span class="emo">✏️</span> 造句本 <b class="en">${(S.notes || []).length}</b>${toFix().length ? ' <span class="emo">💡</span>' : ''}</button>
       <button class="btn soft small" id="coupon"><span class="emo">🎟️</span> 媽媽兌換券</button>
       ${REMOTE.message ? `<button class="btn soft small" id="letter"><span class="emo">💌</span> 媽媽的信</button>` : ''}
       <button class="btn soft small" id="book"><span class="emo">📒</span> 貼紙簿 ${S.badges.length}/${UNITS.length}</button>
@@ -2467,6 +2599,7 @@ function home() {
   card.querySelector('#rescue').onclick = () => { sfx.tap(); rescueView(); };
   card.querySelector('#isle').onclick = () => { sfx.tap(); islandView(); };
   card.querySelector('#dex').onclick = () => { sfx.tap(); dexFilter = 'all'; dexView(); };
+  card.querySelector('#notes').onclick = () => { sfx.tap(); notebookView(); };
   card.querySelector('#coupon').onclick = () => { sfx.tap(); couponView(); };
   card.querySelector('#sync').onclick = () => { sfx.tap(); syncView(); };
   const lt = card.querySelector('#letter');
@@ -2477,6 +2610,7 @@ function home() {
   // 8 點後還沒練：一打開就吼（同一天只吼一次，回首頁不重吼）；停在首頁跨過 8 點也會吼。老虎媽媽沒出來時，才送媽媽的新信
   if (isLate()) { if (lateShownOn !== today()) showLateTiger(); }
   else if (REMOTE.message && REMOTE.message !== S.msgSeen) showLetter(true);
+  else if (newFb().length) showFeedback();
   clearInterval(homeTimer);
   homeTimer = setInterval(() => { if (!ses && isLate() && lateShownOn !== today()) showLateTiger(); }, 30000);
 }
@@ -2690,6 +2824,127 @@ function showLetter(isNew) {
       m.remove();
     };
     m.appendChild(c);
+  };
+}
+
+/* ---------- 造句本、小羊老師的回信 ----------
+   批改放在試算表 review 分頁（eid｜字｜陽寶的句子｜金章 Y｜改好的句子｜小羊老師說），由 Claude 寫入，?action=config 帶回來。
+   金章一個 +3 星；有建議的句子照著改一次 +2 星 */
+const noteOf = eid => (S.notes || []).find(n => n.eid === eid);
+const newFb = () => (S.notes || []).filter(n => n.fb && n.fbNew);
+const toFix = () => (S.notes || []).filter(n => n.fb && !n.fb.ok && n.fb.fix && !n.fixed);
+function applyReviews() {
+  const by = Object.fromEntries((REMOTE.reviews || []).map(r => [r.eid, r]));
+  let n = 0;
+  for (const note of S.notes || []) {
+    const r = by[note.eid];
+    if (!r || note.fb) continue;
+    note.fb = { ok: !!r.ok, fix: String(r.fix || '').trim(), tip: String(r.tip || '').trim() };
+    note.fbNew = true; n++;
+  }
+  if (n) save();
+  return n;
+}
+// 改好的句子裡，陽寶原本沒寫成這樣的字畫黃線（大小寫、標點不同也算，開頭大寫、句點才看得出來）
+const rawToks = s => String(s).replace(/[’‘]/g, "'").replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+function diffMark(fix, orig) {
+  const have = new Set(rawToks(orig));
+  return rawToks(fix).map(t => have.has(t) ? esc(t) : `<mark>${esc(t)}</mark>`).join(' ');
+}
+function noteHtml(n) {
+  const d = new Date(n.at), fb = n.fb;
+  const st = !fb ? '⏳ 等小羊老師看' : fb.ok ? '🏅 金章！' : n.fixed ? '✅ 改好了' : '💡 小羊老師有建議';
+  return `<div class="note ${fb && fb.ok ? 'gold' : ''}">
+    <div class="nhead"><b class="en">${esc(n.w)}</b><span>${d.getMonth() + 1}/${d.getDate()}</span><span class="nstate">${st}</span></div>
+    <div class="ntext en">${esc(n.text)}</div>
+    ${fb && fb.fix ? `<div class="nfix">${fb.ok ? '也可以這樣寫' : '👉 改成這樣'}：<span class="en">${diffMark(fb.fix, n.text)}</span></div>` : ''}
+    ${fb && fb.tip ? `<div class="ntip"><span class="emo">🐑</span> ${esc(fb.tip)}</div>` : ''}
+    <div class="row"><button class="icon-btn" data-say="${esc(n.eid)}" aria-label="聽句子"><span class="emo">🔊</span></button>
+      ${fb && !fb.ok && fb.fix && !n.fixed ? `<button class="btn mint small" data-fix="${esc(n.eid)}">照著改一次 <span class="emo">✏️</span></button>` : ''}</div>
+  </div>`;
+}
+function wireNotes(root, onFix) {
+  root.querySelectorAll('[data-say]').forEach(b => b.onclick = () => {
+    const n = noteOf(b.dataset.say); if (!n) return;
+    pickVoice(); say(n.fb && n.fb.fix ? n.fb.fix : n.text);
+  });
+  root.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => { sfx.tap(); onFix(noteOf(b.dataset.fix)); });
+}
+function notebookView() {
+  $app.innerHTML = '';
+  $app.appendChild(backBar('我的造句本'));
+  const list = (S.notes || []).slice().reverse();
+  const golds = list.filter(n => n.fb && n.fb.ok).length, fix = toFix().length, wait = list.filter(n => !n.fb).length;
+  const card = h(`<section class="card">
+    ${buddy(list.length ? `造了 <b>${list.length}</b> 個句子，拿到 <b>${golds}</b> 個金章 <span class="emo">🏅</span>！`
+      + (fix ? `<br>有 <b>${fix}</b> 句小羊老師給了建議，照著改一次可以拿星星喔！` : '')
+      + (wait ? `<br>還有 ${wait} 句在等小羊老師看。` : '')
+      : '練習的時候，小羊會請你用學過的字造句。<br>造好的句子都會收在這裡，小羊老師看完會寄回信給你！', 'smile')}
+    <div class="notes">${list.map(noteHtml).join('')}</div>
+  </section>`);
+  wireNotes(card, n => refix(n, notebookView));
+  $app.appendChild(card);
+}
+// 照小羊老師改好的句子自己打一次：要一字不差（大小寫、標點都算，常常改的就是這兩樣），打錯會說第幾個字哪裡不一樣
+function refix(n, back) {
+  if (!n || !n.fb || !n.fb.fix) return;
+  const m = h(`<div class="overlay"><section class="card scroll">
+    ${buddy('照小羊老師改好的句子，自己打一次！', 'cheer')}
+    <div class="row"><div class="sentence">${diffMark(n.fb.fix, n.text)}</div><button class="icon-btn" id="sp" aria-label="聽句子"><span class="emo">🔊</span></button></div>
+    <textarea class="make-box" id="box" rows="3" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="sentences"></textarea>
+    <div class="row"><button class="btn mint" id="ok">打好了 <span class="emo">✏️</span></button><button class="btn soft small" id="no">等一下再改</button></div>
+    <div class="heard" id="msg"></div>
+  </section></div>`);
+  document.body.appendChild(m);
+  const box = m.querySelector('#box'), msg = m.querySelector('#msg'), ok = m.querySelector('#ok');
+  let tries = 0;
+  m.querySelector('#sp').onclick = () => say(n.fb.fix);
+  m.querySelector('#no').onclick = () => { sfx.tap(); m.remove(); back(); };
+  ok.onclick = () => {
+    const a = rawToks(box.value), b = rawToks(n.fb.fix);
+    if (!a.length) { msg.textContent = '先在框框裡打字喔～'; return; }
+    let k = 0; while (k < a.length && k < b.length && a[k] === b[k]) k++;
+    if (k === b.length && a.length === b.length) {
+      n.fixed = true; S.stars += 2; save(); refreshStars();
+      logEvent({ type: 'makeFix', id: n.id, w: n.w, got: box.value.trim(), tries: tries + 1 });
+      sfx.yay(); burstAt(box, ['✏️', '⭐', '🌟']);
+      msg.innerHTML = `<b>改好了！</b> +2 <span class="emo">⭐</span>`;
+      ok.remove(); m.querySelector('#no').textContent = '回造句本';
+      return;
+    }
+    tries++; sfx.soft(); wiggle(box);
+    const x = a[k] || '', y = b[k] || '', bare = s => s.replace(/[^A-Za-z0-9']/g, '');
+    const what = x && y && x.toLowerCase() === y.toLowerCase() ? '大寫小寫' : x && y && bare(x) === bare(y) ? '標點符號' : '';
+    msg.textContent = k >= b.length ? '後面多打了字喔，再看一下～'
+      : `${k ? `前面 ${k} 個字都對了，` : ''}第 ${k + 1} 個字${what ? `的${what}` : ''}再看一下～`;
+  };
+}
+// 有新的批改：首頁跳出信封
+function showFeedback() {
+  const list = newFb();
+  if (!list.length || document.querySelector('.overlay, .tiger-mask')) return;
+  const m = h(`<div class="overlay">
+    <div class="envelope" role="button" aria-label="打開信">✉️</div>
+    <div class="bubble">小羊老師看完你的句子了！碰一下打開～</div>
+  </div>`);
+  document.body.appendChild(m);
+  m.querySelector('.envelope').onclick = () => {
+    sfx.yay();
+    const gold = list.filter(n => n.fb.ok).length;
+    list.forEach(n => { n.fbNew = false; });
+    S.stars += gold * 3; save(); refreshStars();
+    logEvent({ type: 'makeFb', got: list.map(n => n.eid).join(' '), tries: gold });
+    m.innerHTML = '';
+    const c = h(`<section class="card scroll">${lamb('cheer').replace('<svg ', '<svg width="110" height="110" ')}
+      <h2 style="margin:0">小羊老師的回信</h2>
+      ${gold ? `<div class="pill">拿到 <b>${gold}</b> 個金章 <span class="emo">🏅</span>　+${gold * 3} <span class="emo">⭐</span></div>` : ''}
+      ${list.length > gold ? buddy('黃色的字是小羊老師幫你改的，照著改一次可以拿星星喔！', 'smile') : ''}
+      <div class="notes">${list.map(noteHtml).join('')}</div>
+      <button class="btn" id="ok">收到了 <span class="emo">💖</span></button></section>`);
+    wireNotes(c, n => { m.remove(); refix(n, notebookView); });
+    c.querySelector('#ok').onclick = () => { sfx.tap(); m.remove(); home(); };
+    m.appendChild(c);
+    if (gold) burst(innerWidth / 2, innerHeight / 3, ['🏅', '⭐', '✏️', '💖']);
   };
 }
 
@@ -3286,8 +3541,10 @@ restoreIfEmpty().then(loadStories).then(() => {
   flush(true);   // 一打開就把整份進度送一次（就算沒有新紀錄），平板上的進度才救得回來
   // 兌換券和媽媽的信放在試算表；先用上次存的畫首頁，抓到新的信再重畫
   const before = REMOTE.message;
+  applyReviews();
   loadRemote().then(() => {
-    if (REMOTE.message !== before && !ses && document.getElementById('go') && lateShownOn !== today()) home();
+    const fresh = applyReviews();   // 小羊老師的新批改
+    if ((REMOTE.message !== before || fresh) && !ses && document.getElementById('go') && lateShownOn !== today()) home();
   });
   // 大人試看用：網址加 #tiger 或 #idle
   if (location.hash === '#tiger') showLateTiger();
