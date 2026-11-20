@@ -615,6 +615,10 @@ const RUN_N = 5;           // 獎勵關有幾個障礙
 const MILESTONES = [3, 7, 14, 21, 30, 45, 60, 90, 120];   // 連續幾天送超稀有寶箱
 const CFG = window.YB_CONFIG || {};
 const LS_KEY = 'yangbao-l4-v1';
+// 雲端密語：只存在這台平板（不跟進度一起上傳）。2026-11-19 起不放在 config.js，GitHub 上看得到 config.js
+const CK_KEY = LS_KEY + '-ck';
+const cloudKey = () => { try { return localStorage.getItem(CK_KEY) || ''; } catch (e) { return ''; } };
+const cloudOn = () => !!(CFG.progressUrl && cloudKey());
 const $app = document.getElementById('app');
 
 /* ---------- 小工具 ---------- */
@@ -689,12 +693,12 @@ function syncNote(res) {
   save();
 }
 async function flush(force) {
-  if (!CFG.progressUrl || flushing) return;
+  if (!cloudOn() || flushing) return;   // 還沒輸入雲端密語：紀錄先留在平板上
   if (!S.outbox.length && !force) return;
   flushing = true;
   const batch = S.outbox.slice(0, 400);   // 一次最多 400 筆，太多就分批
   const snapshot = Object.assign({}, S, { outbox: [] });
-  const body = JSON.stringify({ key: CFG.key, device: S.device, events: batch, state: snapshot, left: S.outbox.length });
+  const body = JSON.stringify({ key: cloudKey(), device: S.device, events: batch, state: snapshot, left: S.outbox.length });
   let res, ok = false;
   try {
     const r = await fetch(CFG.progressUrl, { method: 'POST', body });
@@ -719,13 +723,15 @@ async function flush(force) {
 function syncLabel() {
   const last = (S.syncLog || []).slice(-1)[0];
   if (!CFG.progressUrl) return '☁️ 沒有設定雲端';
+  if (!cloudKey()) return '☁️ 請大人輸入雲端密語';
+  if (last && /bad key/.test(last.res)) return '☁️ 雲端密語不對';
   if (S.outbox.length) return `☁️ 還有 ${S.outbox.length} 筆沒送出`;
   return last && last.res.startsWith('ok') ? '☁️ 已同步' : '☁️ 還沒同步過';
 }
 async function restoreIfEmpty() {
-  if (!CFG.progressUrl || Object.keys(S.words).length) return;
+  if (!cloudOn() || Object.keys(S.words).length) return;
   try {
-    const r = await fetch(`${CFG.progressUrl}?action=state&key=${encodeURIComponent(CFG.key)}`);
+    const r = await fetch(`${CFG.progressUrl}?action=state&key=${encodeURIComponent(cloudKey())}`);
     const j = await r.json();
     if (j && j.state && j.state.words) { S = Object.assign(blankState(), j.state, { outbox: [] }); save(); }
   } catch (e) {}
@@ -1161,9 +1167,9 @@ let REMOTE = { coupons: null, message: '', reviews: [] };
 try { Object.assign(REMOTE, JSON.parse(localStorage.getItem(LS_KEY + '-cfg')) || {}); } catch (e) {}
 const coupons = () => (REMOTE.coupons && REMOTE.coupons.length ? REMOTE.coupons : DEFAULT_COUPONS);
 async function loadRemote() {
-  if (!CFG.progressUrl) return;
+  if (!cloudOn()) return;
   try {
-    const r = await fetch(`${CFG.progressUrl}?action=config&key=${encodeURIComponent(CFG.key)}`);
+    const r = await fetch(`${CFG.progressUrl}?action=config&key=${encodeURIComponent(cloudKey())}`);
     const j = await r.json();
     if (j && j.ok && ('coupons' in j || 'message' in j)) {
       // reviews：小羊老師（Claude）批改的造句，試算表 review 分頁；舊版 Apps Script 沒有這一欄就留著上次的
@@ -2960,6 +2966,9 @@ function syncView() {
     <div class="pill" style="align-self:center">${syncLabel()}</div>
     <div class="heard">這台裝置：<span class="en">${esc(S.device)}</span>　送到：<span class="en">${esc(host || '（沒有設定）')}</span><br>
       進度：練習 ${S.days.length} 天、學過 ${Object.keys(S.words).length} 個字</div>
+    <div class="heard">雲端密語：${cloudKey() ? '已經輸入過（只存在這台平板）' : '<b>還沒輸入</b>，練習紀錄會先留在平板上'}</div>
+    <div class="row"><input class="pass" id="ck" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${cloudKey() ? '要換密語再輸入' : '請大人輸入雲端密語'}" aria-label="雲端密語">
+      <button class="btn small" id="cksave">存起來 <span class="emo">🔑</span></button></div>
     <div class="row"><button class="btn mint small" id="send">再送一次</button><button class="btn soft small" id="test">測試連線</button><button class="btn butter small" id="mictest">測試麥克風 <span class="emo">🎤</span></button></div>
     <div class="heard" id="out"></div>
     <div class="heard" id="srout" style="text-align:left;font-size:15px;line-height:1.5;overflow-wrap:anywhere">語音辨識：${srOff ? '不能用　' + esc(srWhyText()) : '可以用'}</div>
@@ -2970,10 +2979,29 @@ function syncView() {
   </section>`);
   const out = card.querySelector('#out');
   card.querySelector('#send').onclick = async () => { sfx.tap(); out.textContent = '送出中……'; await flush(true); syncView(); };
+  // 存密語前先問試算表對不對；連不上就先存起來，之後送資料時再看
+  const ck = card.querySelector('#ck');
+  card.querySelector('#cksave').onclick = async () => {
+    const k = ck.value.toLowerCase().replace(/[^a-z0-9]/g, '');   // 空白、連字號都不算
+    if (!k) return;
+    sfx.tap(); out.textContent = '確認中……';
+    let res = '';
+    try { const r = await fetch(`${CFG.progressUrl}?action=hello&key=${encodeURIComponent(k)}`); const j = await r.json(); res = j && j.ok ? 'ok' : 'bad'; } catch (e) { res = 'net'; }
+    if (res === 'bad') { sfx.soft(); wiggle(ck); out.textContent = '密語不對，再看一次'; return; }
+    try { localStorage.setItem(CK_KEY, k); } catch (e) {}
+    const empty = !Object.keys(S.words).length;
+    await restoreIfEmpty();   // 平板資料被清掉過：把雲端的進度抓回來
+    await flush(true); await loadRemote(); applyReviews();
+    syncView();
+    document.getElementById('out').textContent = res === 'ok'
+      ? '密語對了，已存在這台平板' + (empty && Object.keys(S.words).length ? '，進度也抓回來了' : '')
+      : '暫時連不上試算表，密語先存起來了';
+  };
+  ck.onkeydown = e => { if (e.key === 'Enter') card.querySelector('#cksave').click(); };
   card.querySelector('#test').onclick = async () => {
     sfx.tap(); out.textContent = '測試中……';
     try {
-      const r = await fetch(`${CFG.progressUrl}?action=hello&key=${encodeURIComponent(CFG.key)}`);
+      const r = await fetch(`${CFG.progressUrl}?action=hello&key=${encodeURIComponent(cloudKey())}`);
       const t = await r.text();
       out.textContent = `讀取：HTTP ${r.status}　${t.slice(0, 80)}`;
     } catch (e) { out.textContent = '讀取失敗：' + String((e && e.message) || e); }
