@@ -2954,6 +2954,21 @@ function showFeedback() {
   };
 }
 
+// 存雲端密語：先問試算表對不對；連不上就先存起來，之後送資料時再看。回 ok／restored（進度也抓回來）／net／bad
+async function saveCloudKey(raw) {
+  const k = String(raw).toLowerCase().replace(/[^a-z0-9]/g, '');   // 空白、連字號都不算
+  let res = '';
+  try { const r = await fetch(`${CFG.progressUrl}?action=hello&key=${encodeURIComponent(k)}`); const j = await r.json(); res = j && j.ok ? 'ok' : 'bad'; } catch (e) { res = 'net'; }
+  if (res === 'bad') return res;
+  try { localStorage.setItem(CK_KEY, k); } catch (e) {}
+  const empty = !Object.keys(S.words).length;
+  await restoreIfEmpty();   // 平板資料被清掉過：把雲端的進度抓回來
+  await flush(true); await loadRemote(); applyReviews();
+  return res === 'ok' && empty && Object.keys(S.words).length ? 'restored' : res;
+}
+const keyMsg = res => res === 'net' ? '暫時連不上試算表，密語先存起來了'
+  : '密語對了，已存在這台平板' + (res === 'restored' ? '，進度也抓回來了' : '');
+
 // 同步狀態（給大人看）：還有幾筆沒送、最近每次送資料的結果
 function syncView() {
   $app.innerHTML = '';
@@ -2979,23 +2994,14 @@ function syncView() {
   </section>`);
   const out = card.querySelector('#out');
   card.querySelector('#send').onclick = async () => { sfx.tap(); out.textContent = '送出中……'; await flush(true); syncView(); };
-  // 存密語前先問試算表對不對；連不上就先存起來，之後送資料時再看
   const ck = card.querySelector('#ck');
   card.querySelector('#cksave').onclick = async () => {
-    const k = ck.value.toLowerCase().replace(/[^a-z0-9]/g, '');   // 空白、連字號都不算
-    if (!k) return;
+    if (!ck.value.replace(/[^a-z0-9]/gi, '')) return;
     sfx.tap(); out.textContent = '確認中……';
-    let res = '';
-    try { const r = await fetch(`${CFG.progressUrl}?action=hello&key=${encodeURIComponent(k)}`); const j = await r.json(); res = j && j.ok ? 'ok' : 'bad'; } catch (e) { res = 'net'; }
+    const res = await saveCloudKey(ck.value);
     if (res === 'bad') { sfx.soft(); wiggle(ck); out.textContent = '密語不對，再看一次'; return; }
-    try { localStorage.setItem(CK_KEY, k); } catch (e) {}
-    const empty = !Object.keys(S.words).length;
-    await restoreIfEmpty();   // 平板資料被清掉過：把雲端的進度抓回來
-    await flush(true); await loadRemote(); applyReviews();
     syncView();
-    document.getElementById('out').textContent = res === 'ok'
-      ? '密語對了，已存在這台平板' + (empty && Object.keys(S.words).length ? '，進度也抓回來了' : '')
-      : '暫時連不上試算表，密語先存起來了';
+    document.getElementById('out').textContent = keyMsg(res);
   };
   ck.onkeydown = e => { if (e.key === 'Enter') card.querySelector('#cksave').click(); };
   card.querySelector('#test').onclick = async () => {
@@ -3562,6 +3568,9 @@ function qaDone(r) {
 const qaDone2 = z => zoneView(z);
 
 /* ---------- 開始 ---------- */
+// 大人用 QR code 打開（網址帶 #ck=密語）：先把密語從網址列拿掉，再存起來
+const linkKey = /^#ck=/.test(location.hash) ? decodeURIComponent(location.hash.slice(4)) : '';
+if (linkKey) history.replaceState(null, '', location.pathname + location.search);
 restoreIfEmpty().then(loadStories).then(() => {
   // 上次練到一半就關掉：先把那次學過的字補記起來
   if (S.pending) { const p = S.pending; S.pending = null; settle(p); save(); }
@@ -3577,6 +3586,13 @@ restoreIfEmpty().then(loadStories).then(() => {
   // 大人試看用：網址加 #tiger 或 #idle
   if (location.hash === '#tiger') showLateTiger();
   if (location.hash === '#idle') setTimeout(showIdleTiger, 300);
+  if (linkKey) {
+    syncView(); document.getElementById('out').textContent = '確認雲端密語中……';
+    saveCloudKey(linkKey).then(res => {
+      syncView();
+      document.getElementById('out').textContent = res === 'bad' ? 'QR code 裡的密語不對，請大人再看一次' : keyMsg(res);
+    });
+  }
 });
 window.addEventListener('online', flush);
 // 離線也打得開：sw.js 一律先抓網路上的新版，抓不到才用存在平板上的
