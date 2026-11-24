@@ -173,6 +173,13 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
 .tile.used { visibility: hidden; }
 .tile.hint { animation: glow-tile .7s ease-in-out infinite alternate; }
 @keyframes glow-tile { to { background: var(--butter); box-shadow: 0 5px 0 var(--butter-deep); } }
+/* 音節塊拼字：一塊一個音節，寬度跟著字母數 */
+.slot.chunk { width: auto; min-width: calc(var(--n) * 24px + 28px); padding: 0 10px; }
+.tile.chunk { width: auto; min-width: calc(var(--n) * 24px + 32px); padding: 0 14px; background: #FFE3EC; box-shadow: 0 5px 0 var(--pink-deep); }
+.tile.chunk:active { box-shadow: 0 1px 0 var(--pink-deep); }
+.syl { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; font-family: var(--font-en); font-weight: 600; font-size: 26px; }
+.syl span { background: #FFF6D8; border-radius: 12px; padding: 2px 12px; box-shadow: inset 0 0 0 2px var(--butter-deep); }
+.syl span:nth-child(even) { background: #E8F7FB; box-shadow: inset 0 0 0 2px var(--water-deep); }
 
 /* 排句子 */
 .answer-line {
@@ -314,6 +321,16 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
 .pill { background: #fff; border-radius: 999px; padding: 6px 16px; box-shadow: 0 4px 0 var(--line); font-size: 19px; }
 .pill b { font-family: var(--font-en); font-size: 22px; }
 .friends { font-family: var(--font-emoji); font-size: 32px; letter-spacing: 4px; }
+/* 島上的小動物：走過去、停一下、轉身走回來，一路小跳步 */
+.pet { animation: pet-walk var(--dur) ease-in-out infinite; }
+.pet-face { transform-box: fill-box; transform-origin: center; animation: pet-face var(--dur) linear infinite; }
+.pet-hop { transform-box: fill-box; transform-origin: center bottom; animation: pet-hop .32s ease-in-out infinite alternate; }
+.pet.jump .pet-hop { animation: pet-jump .7s cubic-bezier(.3, 1.5, .5, 1); }
+.talkable .pet { cursor: pointer; }
+@keyframes pet-walk { 0%, 8% { transform: translateX(0); } 42%, 58% { transform: translateX(var(--dx)); } 92%, 100% { transform: translateX(0); } }
+@keyframes pet-face { 0%, 49.9% { transform: scaleX(var(--f)); } 50%, 100% { transform: scaleX(calc(var(--f) * -1)); } }
+@keyframes pet-hop { to { transform: translateY(-3px); } }
+@keyframes pet-jump { 40% { transform: translateY(-24px) scale(1.25); } }
 
 /* ---------- 跳出來的小視窗（寶箱、確定要休息嗎） ---------- */
 .overlay {
@@ -460,19 +477,41 @@ button:focus-visible { outline: 4px solid var(--water-deep); outline-offset: 3px
 .qa-ans .nowrap { white-space: nowrap; }
 .qa-ans .blank { display: inline-block; min-width: 3.2em; border-bottom: 3px dashed var(--pink-deep); margin: 0 4px; }
 
-/* ---------- 媽媽兌換券、媽媽的信 ---------- */
-.coupons { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; width: 100%; }
-.coupon {
-  position: relative; border-radius: 22px; padding: 14px 16px; background: #FFF6D8;
-  border: 3px dashed var(--butter-deep); display: flex; align-items: center; gap: 12px; text-align: left;
+/* ---------- 小羊的房間 ---------- */
+.room {
+  position: relative; width: min(100%, calc(60vh * 4 / 3)); aspect-ratio: 4 / 3; margin: 0 auto;
+  border-radius: 26px; overflow: hidden; box-shadow: inset 0 0 0 3px var(--line); container-type: inline-size;
+  user-select: none; -webkit-user-select: none;
 }
-.coupon .emo { font-size: 44px; }
-.coupon b { display: block; font-size: 21px; }
-.coupon .price { font-family: var(--font-en); font-size: 18px; color: var(--cocoa); }
-.coupon.short { opacity: .55; }
-.ticket { background: #FFF6D8; border: 4px dashed var(--butter-deep); border-radius: 26px; padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.ticket .emo { font-size: 80px; line-height: 1; }
-.ticket h2 { margin: 0; font-size: 30px; }
+.room-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 40%; }
+.rp {
+  position: absolute; transform: translate(-50%, -50%) scale(var(--s, 1)) scaleX(var(--f, 1));
+  font-family: var(--font-emoji); line-height: 1; font-size: 48px; font-size: calc(var(--b, 1) * 10cqw);
+  touch-action: none; cursor: grab; filter: drop-shadow(0 3px 0 rgba(91, 59, 49, .18));
+}
+.rp > span { display: block; }
+.rp > span.hop { animation: pop .45s cubic-bezier(.3, 1.6, .5, 1); }
+.rp.sel { filter: drop-shadow(0 0 5px #FF8FAB) drop-shadow(0 0 2px #FF5D8F); }
+.rp.drag { cursor: grabbing; }
+.lamb-rp { width: 22cqw; }
+.lamb-rp svg { display: block; width: 100%; height: auto; overflow: visible; }
+.room-tools { min-height: 0; }
+.room-tools:empty { display: none; }
+.item .en { font-family: var(--font-en); font-size: 16px; color: var(--ink-soft); }
+.swatch { position: relative; display: block; width: 72px; height: 52px; border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 0 2px var(--line); }
+.swatch .room-floor { height: 100%; border-top: 0; }
+.wall-w0 { background: #FFF4E6; }
+.wall-w1 { background: #FFE3EC; }
+.wall-w2 { background: repeating-linear-gradient(90deg, #DDF5EC 0 22px, #F4FCF9 22px 44px); }
+.wall-w3 { background: radial-gradient(circle at 25% 30%, #fff 0 2px, transparent 3px) 0 0 / 46px 46px, radial-gradient(circle at 70% 75%, #FFE07A 0 3px, transparent 4px) 0 0 / 58px 58px, #C9DAFF; }
+.wall-w4 { background: linear-gradient(180deg, #FFD3DF, #FFEFC0 30%, #D6F4E3 55%, #D9E8FF 80%); }
+.floor-f0 .room-floor { background: repeating-linear-gradient(90deg, #E6C29C 0 46px, #D6AE85 46px 49px); border-top: 5px solid #C99B72; }
+.floor-f1 .room-floor { background: radial-gradient(circle, #FFE3EC 0 3px, transparent 4px) 0 0 / 24px 24px, #FFB9CC; border-top: 5px solid #F28FAA; }
+.floor-f2 .room-floor { background: repeating-linear-gradient(90deg, #A8E08F 0 30px, #9AD681 30px 60px); border-top: 5px solid #7CC46C; }
+.floor-f3 .room-floor { background: conic-gradient(#fff 25%, #FFD6E2 0 50%, #fff 0 75%, #FFD6E2 0) 0 0 / 44px 44px; border-top: 5px solid #EBCDAE; }
+.floor-f4 .room-floor { background: radial-gradient(circle at 30% 50%, #fff 0 14px, transparent 15px) 0 0 / 60px 40px, radial-gradient(circle at 60% 40%, #fff 0 12px, transparent 13px) 0 0 / 60px 40px, #DCEFFF; border-top: 5px solid #B8DAF5; }
+
+/* ---------- 媽媽的信 ---------- */
 .letter { background: #FFFDF6; border-radius: 18px; padding: 18px 20px; box-shadow: inset 0 0 0 3px #F5D9C8; font-size: 24px; line-height: 1.7; text-align: left; white-space: pre-wrap; width: 100%; }
 .envelope { font-family: var(--font-emoji); font-size: 120px; line-height: 1; cursor: pointer; animation: chest-bob 1.2s ease-in-out infinite; }
 
@@ -641,6 +680,8 @@ function blankState() {
     zones: ['earth'], cards: [],   // 探險地圖：打開的區域、收集到的動物卡
     qa: {}, qaDay: {},             // 小羊問答：每題說對幾次（決定提示多少）、每區今天送過卡沒
     make: {}, notes: [],           // 造句：每個字造過幾句（決定提示多少）、造句本（含小羊老師的批改）
+    spl: {},                       // 拼字階段（用字當 key，不同單元的同一個字共用）：0 音節塊、1 字母磚、2 字母磚一次拼對過
+    room: { owned: [], placed: [], wall: 'w0', floor: 'f0' },   // 小羊的房間：買到的家具、擺在哪裡（x、y 是百分比）、壁紙、地板
     syncLog: [],     // 最近 20 次送資料的結果，跟著進度一起上傳，查「為什麼沒送上來」用
     pending: null,   // 練到一半關掉時的進度，下次打開時補記
   };
@@ -970,15 +1011,26 @@ const ISLAND = [
   [140, '🐚', '貝殼', 70, 242, 20],
   [150, '🪐', '行星', 96, 50, 34],
 ];
-const FRIENDS = ['🐰', '🐥', '🐢', '🐹', '🦔', '🐼', '🐨', '🦊', '🐸', '🐧', '🐞', '🐿️', '🦉', '🐬', '🐙', '🦄',
-  '🦦', '🐤', '🐑', '🐶', '🐱', '🐻', '🦭', '🐝'];
+// 救出的小動物：2026-11-24 起換成有身體的 emoji（原本 🐰🐼🐨 這類只有頭），在島上走來走去；點牠會跳一下、唸英文名字
+const FRIEND_LIST = [['🐇', 'rabbit', '兔子'], ['🐥', 'chick', '小雞'], ['🐢', 'turtle', '烏龜'], ['🐁', 'mouse', '老鼠'],
+  ['🦔', 'hedgehog', '刺蝟'], ['🐘', 'elephant', '大象'], ['🦘', 'kangaroo', '袋鼠'], ['🦓', 'zebra', '斑馬'],
+  ['🦆', 'duck', '鴨子'], ['🐧', 'penguin', '企鵝'], ['🐞', 'ladybug', '瓢蟲'], ['🐿️', 'squirrel', '松鼠'],
+  ['🦉', 'owl', '貓頭鷹'], ['🐬', 'dolphin', '海豚'], ['🐙', 'octopus', '章魚'], ['🦙', 'llama', '羊駝'],
+  ['🦦', 'otter', '水獺'], ['🐤', 'baby chick', '小小雞'], ['🐑', 'sheep', '綿羊'], ['🐕', 'dog', '小狗'],
+  ['🐈', 'cat', '小貓'], ['🐖', 'pig', '小豬'], ['🦭', 'seal', '海豹'], ['🐝', 'bee', '蜜蜂']];
+const FRIENDS = FRIEND_LIST.map(x => x[0]);
 const FRIEND_POS = [[84, 214], [112, 228], [296, 230], [330, 214], [204, 242], [116, 192], [288, 192], [182, 204],
   [222, 206], [346, 202], [48, 178], [146, 236], [266, 240], [318, 190], [80, 176], [372, 206],
   [236, 252], [168, 186], [62, 222], [352, 228], [240, 196], [272, 216], [130, 252], [134, 88]];
 function islandSvg(days = S.days.length, friends = S.friends || 0) {
   const grass = days >= 1;
   const things = ISLAND.filter(x => x[0] <= days).sort((a, b) => a[4] - b[4]);
-  const pets = FRIENDS.slice(0, Math.min(friends, FRIENDS.length)).map((e, i) => emoT(e, FRIEND_POS[i][0], FRIEND_POS[i][1], 22)).join('');
+  // 每隻走的距離、快慢、起步時間都不一樣，看起來才不會整齊劃一；往左走是正面（emoji 動物大多臉朝左），走回來時翻面
+  const pets = FRIENDS.slice(0, Math.min(friends, FRIENDS.length)).map((e, i) => {
+    const [x, y] = FRIEND_POS[i], dx = (i % 2 ? 1 : -1) * (10 + (i * 7) % 14), dur = 7 + (i * 3) % 6;
+    return `<g class="pet" data-i="${i}" style="--dx:${dx}px;--dur:${dur}s;animation-delay:-${(i * 1.7) % dur}s">`
+      + `<g class="pet-face" style="--dur:${dur}s;--f:${dx < 0 ? 1 : -1};animation-delay:-${(i * 1.7) % dur}s">${emoT(e, x, y, 24, 0, 'pet-hop')}</g></g>`;
+  }).join('');
   const se = season();
   const deco = se ? se.deco.map(([e, x, y, s]) => emoT(e, x, y, s)).join('') : '';
   const snow = se && se.snow ? Array.from({ length: 26 }, (_, i) =>
@@ -1156,16 +1208,10 @@ function bossSvg(g, mood = 'mad') {
   return `<svg viewBox="0 0 120 120" role="img" aria-label="貪吃雲">${body}${face}</svg>`;
 }
 
-/* ---------- 媽媽兌換券、媽媽的信（內容放在試算表，這裡是沒連上時的預設） ---------- */
-const DEFAULT_COUPONS = [
-  { name: '多玩 30 分鐘平板', stars: 100, e: '📱' },
-  { name: '週末吃冰淇淋', stars: 150, e: '🍦' },
-  { name: '今晚不用洗碗', stars: 200, e: '🍽️' },
-  { name: '週末選一部電影', stars: 250, e: '🎬' },
-];
+/* ---------- 媽媽的信、小羊老師的批改（內容放在試算表） ----------
+   2026-11-24 起媽媽兌換券改成「小羊的房間」（星星買家具佈置房間）；試算表的 coupons 分頁還會傳來，網頁不再用 */
 let REMOTE = { coupons: null, message: '', reviews: [] };
 try { Object.assign(REMOTE, JSON.parse(localStorage.getItem(LS_KEY + '-cfg')) || {}); } catch (e) {}
-const coupons = () => (REMOTE.coupons && REMOTE.coupons.length ? REMOTE.coupons : DEFAULT_COUPONS);
 async function loadRemote() {
   if (!cloudOn()) return;
   try {
@@ -1309,7 +1355,7 @@ function burstAt(el, set) { const r = el.getBoundingClientRect(); burst(r.left +
 function wiggle(el) { el.classList.remove('wiggle', 'jelly'); void el.offsetWidth; el.classList.add('wiggle'); }
 // 軟Q手感：碰到的按鈕都會壓扁再彈回來
 document.addEventListener('pointerdown', e => {
-  const b = e.target.closest && e.target.closest('.btn, .choice, .tile, .chip, .icon-btn, .node, .item, .tab, .mic, .unit, .dexcard, .coupon, .key, .book, .zone, .zcard');
+  const b = e.target.closest && e.target.closest('.btn, .choice, .tile, .chip, .icon-btn, .node, .item, .tab, .mic, .unit, .dexcard, .key, .book, .zone, .zcard');
   if (!b || b.classList.contains('wiggle')) return;
   b.classList.remove('jelly'); void b.offsetWidth; b.classList.add('jelly');
   b.addEventListener('animationend', () => b.classList.remove('jelly'), { once: true });
@@ -1517,9 +1563,11 @@ function next() {
     if (order[0]() || order[1]() || addExtraBatch()) return next();
     ses.allDone = true; return finish();
   }
-  // 複習到很熟（第 4 盒以上）的字，拼字改成大師級：沒有字母磚，自己打
-  const master = step.t === 'spell' && ses.mode !== 'rescue' && S.words[step.w.id] && S.words[step.w.id].box >= 4;
-  ({ note: viewNote, intro: viewIntro, meaning: viewMeaning, listen: viewListen, spell: master ? viewSpellMaster : viewSpell,
+  // 拼字分三階：音節塊（還沒用音節塊一次拼對）→ 字母磚 → 大師級（第 4 盒以上、而且字母磚拼對過：沒有字母磚，自己打）
+  const lv = step.t === 'spell' ? spLevel(step.w) : 0;
+  const master = step.t === 'spell' && ses.mode !== 'rescue' && lv >= 1 && S.words[step.w.id] && S.words[step.w.id].box >= 4;
+  const spellView = step.t !== 'spell' ? null : master ? viewSpellMaster : step.w.sy && lv === 0 ? viewSpellChunk : viewSpell;
+  ({ note: viewNote, intro: viewIntro, meaning: viewMeaning, listen: viewListen, spell: spellView,
     sentMean: viewSentMean, order: viewOrder, saySent: viewSaySent, make: viewMake, boss: viewBoss, page: viewPage, storyQ: viewStoryQ }[step.t])(step);
 }
 
@@ -1578,6 +1626,7 @@ function viewIntro(step) {
     <div class="row"><div class="word">${esc(w.w)}</div>
       <button class="icon-btn" data-say="w" aria-label="再聽一次"><span class="emo">🔊</span></button>
       <button class="icon-btn" data-say="slow" aria-label="慢慢唸"><span class="emo">🐢</span></button></div>
+    ${sylHtml(w)}
     <div class="gloss">${esc(w.g)}</div>
     <div class="row"><div class="sentence">${hilite(w.s, w.w)}</div>
       <button class="icon-btn" data-say="s" aria-label="聽例句"><span class="emo">🔊</span></button></div>
@@ -1798,7 +1847,7 @@ function viewSpell(step) {
     if (got === word) {
       done = true; sfx.yay(); burstAt(slots[Math.floor(L / 2)]);
       msg.innerHTML = `<b>${pick(CHEERS)}</b>`;
-      if (tries === 1) { gainStar(); mission('spell'); } else markMiss(w);
+      if (tries === 1) { gainStar(); mission('spell'); setSpLevel(w, 2); } else markMiss(w);
       answerLog(step, tries === 1, tries, { got });
       say(w.w); nextBtn(card);
       return;
@@ -1808,9 +1857,119 @@ function viewSpell(step) {
     if (tries === 1) { msg.textContent = '差一點點！小羊幫你放好第一個字母，把錯的字母換掉就好～'; setTimeout(() => lockLetters(1), 450); }
     else if (tries === 2) { msg.textContent = '再幫你放好一半，把錯的字母換掉，加油！'; setTimeout(() => lockLetters(Math.max(2, Math.ceil(L / 2))), 450); }
     else {
-      done = true; markMiss(w);
-      setTimeout(() => { clearFree(); lockLetters(L); msg.innerHTML = '<b>我們一起記住它！</b>念一遍：<span class="en">' + esc(w.w) + '</span>'; say(w.w, true); }, 450);
+      done = true; markMiss(w); setSpLevel(w, 0);   // 字母磚拼不出來：下次先回到音節塊
+      setTimeout(() => { clearFree(); lockLetters(L); msg.innerHTML = '<b>我們一起記住它！</b>念一遍：<span class="en">' + esc(w.w) + '</span>' + sylHtml(w); say(w.w, true); }, 450);
       answerLog(step, false, tries, { got });
+      nextBtn(card);
+    }
+  }
+  render();
+  setTimeout(() => say(w.w), 300);
+}
+
+/* ---------- 音節塊拼字（拼字第一階） ----------
+   11/14～11/24 的紀錄：字母磚拼字 58% 錯滿三次，錯法是字母都對、順序亂排（massive→masevis、view→vwie），
+   所以剛學的字先用音節塊拼（gla + cier），多放一兩塊母音換掉的假塊（gle、cer），練「聽到的音對到哪幾個字母」。
+   一次拼對就升到字母磚；字母磚拼不出來會退回這裡。 */
+const spLevel = w => (S.spl && S.spl[w.w]) || 0;
+function setSpLevel(w, n) {
+  if (!w.sp || ses && ses.mode === 'rescue' && n > spLevel(w)) return;   // 救援站只會往下退，不會升級
+  S.spl = S.spl || {};
+  if (n) S.spl[w.w] = n; else delete S.spl[w.w];
+  save();
+}
+const sylHtml = w => w.sy ? `<div class="syl" aria-label="音節">${w.sy.split('|').map(p => `<span>${esc(p)}</span>`).join('')}</div>` : '';
+// 假塊：把某一塊的一個母音換成別的母音；不能跟真的任何一塊一樣
+function chunkDecoys(pieces, n) {
+  const V = 'aeiou', out = [];
+  for (const p of shuffle(pieces)) {
+    const pos = [...p].map((c, i) => V.includes(c) ? i : -1).filter(i => i >= 0);
+    if (!pos.length) continue;
+    const i = pick(pos), v = pick(V.replace(p[i], '').split(''));
+    const d = p.slice(0, i) + v + p.slice(i + 1);
+    if (!pieces.includes(d) && !out.includes(d)) out.push(d);
+    if (out.length >= n) break;
+  }
+  return out;
+}
+function viewSpellChunk(step) {
+  const w = step.w, word = w.w.toLowerCase(), pieces = w.sy.split('|'), L = pieces.length;
+  const chips = shuffle(pieces.concat(chunkDecoys(pieces, L >= 3 ? 2 : 1)));
+  const card = frame(`
+    <div class="prompt"><span class="tag">拼拼看</span> 聽發音，用音節塊拼出來</div>
+    <div class="emoji-big">${w.e}</div>
+    <div class="gloss">${esc(w.g)}</div>
+    <div class="row">
+      <button class="icon-btn" id="sp" aria-label="聽發音"><span class="emo">🔊</span></button>
+      <button class="icon-btn" id="slow" aria-label="慢慢唸"><span class="emo">🐢</span></button>
+    </div>
+    <div class="slots">${pieces.map(p => `<div class="slot chunk" style="--n:${p.length}"></div>`).join('')}</div>
+    <div class="tiles">${chips.map((c, i) => `<button class="tile chunk" data-i="${i}" style="--n:${c.length}">${esc(c)}</button>`).join('')}</div>
+    <div class="row"><button class="btn soft small" id="bs">⌫ 退一塊</button><button class="btn soft small" id="clear">全部重來</button>
+      <button class="btn mint small" id="ok">拼好了 ✓</button></div>
+    <div class="heard" id="msg">聽聽看有幾段，聽不清楚就按 🐢 慢慢唸～</div>
+  `);
+  const slots = [...card.querySelectorAll('.slot')], tiles = [...card.querySelectorAll('.tile')], msg = card.querySelector('#msg');
+  const okBtn = card.querySelector('#ok');
+  const fill = new Array(L).fill(null), locked = new Array(L).fill(false);
+  let tries = 0, done = false, dirty = false;
+  card.querySelector('#sp').onclick = () => say(w.w);
+  card.querySelector('#slow').onclick = () => say(w.w, true);
+  function render() {
+    slots.forEach((s, k) => {
+      s.textContent = fill[k] == null ? '' : chips[fill[k]];
+      s.classList.toggle('filled', fill[k] != null && !locked[k]);
+      s.classList.toggle('locked', locked[k]);
+    });
+    tiles.forEach((t, i) => t.classList.toggle('used', fill.includes(i)));
+    okBtn.style.visibility = !done && dirty && fill.every(v => v != null) ? 'visible' : 'hidden';
+  }
+  function lockPieces(n) {   // 提示：從頭幫忙放好 n 塊
+    for (let k = 0; k < n; k++) {
+      if (locked[k]) continue;
+      if (fill[k] == null || chips[fill[k]] !== pieces[k]) {
+        let i = chips.findIndex((c, idx) => c === pieces[k] && !fill.includes(idx));
+        if (i < 0) { const j = fill.findIndex((v, kk) => v != null && !locked[kk] && kk !== k && chips[v] === pieces[k]); i = fill[j]; fill[j] = null; }
+        fill[k] = i;
+      }
+      locked[k] = true;
+    }
+    render();
+  }
+  function clearFree() { fill.forEach((v, k) => { if (!locked[k]) fill[k] = null; }); }
+  tiles.forEach(t => t.onclick = () => {
+    if (done || t.classList.contains('used')) return;
+    const k = fill.findIndex(v => v == null); if (k < 0) return;
+    sfx.tap(); fill[k] = Number(t.dataset.i); dirty = true; render();
+  });
+  slots.forEach((s, k) => s.onclick = () => { if (done || locked[k] || fill[k] == null) return; fill[k] = null; dirty = true; render(); });
+  card.querySelector('#bs').onclick = () => {
+    if (done) return;
+    let k = L - 1; while (k >= 0 && (fill[k] == null || locked[k])) k--;
+    if (k < 0) return;
+    sfx.tap(); fill[k] = null; dirty = true; render();
+  };
+  card.querySelector('#clear').onclick = () => { if (done) return; clearFree(); dirty = true; render(); };
+  okBtn.onclick = () => { if (done || !dirty || !fill.every(v => v != null)) return; check(); };
+  function check() {
+    const got = fill.map(i => chips[i]).join('');
+    tries++; dirty = false; okBtn.style.visibility = 'hidden';
+    if (got === word) {
+      done = true; sfx.yay(); burstAt(slots[Math.floor(L / 2)]);
+      msg.innerHTML = `<b>${pick(CHEERS)}</b>${tries === 1 ? '下次換成一個一個字母拼喔！' : ''}`;
+      if (tries === 1) { gainStar(); mission('spell'); setSpLevel(w, 1); } else markMiss(w);
+      answerLog(step, tries === 1, tries, { got, kind: 'chunk' });
+      say(w.w); nextBtn(card);
+      return;
+    }
+    sfx.soft(); wiggle(card.querySelector('.slots'));
+    logEvent({ type: 'spellTry', sid: ses.sid, id: w.id, w: w.w, got: fill.map(i => chips[i]).join('|'), kind: 'chunk' });
+    if (tries === 1) { msg.textContent = '差一點點！小羊幫你放好第一塊，再聽一次 🐢'; setTimeout(() => lockPieces(1), 450); }
+    else if (tries === 2 && L > 2) { msg.textContent = '再幫你放好一半，加油！'; setTimeout(() => lockPieces(Math.ceil(L / 2)), 450); }
+    else {
+      done = true; markMiss(w);
+      setTimeout(() => { clearFree(); lockPieces(L); msg.innerHTML = '<b>我們一起記住它！</b>一段一段唸：<span class="en">' + esc(pieces.join(' · ')) + '</span>'; say(w.w, true); }, 450);
+      answerLog(step, false, tries, { got, kind: 'chunk' });
       nextBtn(card);
     }
   }
@@ -2044,7 +2203,7 @@ function viewSpellMaster(step) {
     if (tries === 1) { msg.textContent = '差一點點！小羊幫你放好第一個字母～'; setTimeout(() => lock(1), 450); }
     else if (tries === 2) { msg.textContent = '再幫你放好一半，加油！'; setTimeout(() => lock(Math.max(2, Math.ceil(L / 2))), 450); }
     else {
-      done = true; markMiss(w);
+      done = true; markMiss(w); setSpLevel(w, 1);   // 大師級打不出來：下次回到字母磚
       setTimeout(() => { lock(L); msg.innerHTML = '<b>我們一起記住它！</b>念一遍：<span class="en">' + esc(w.w) + '</span>'; say(w.w, true); }, 450);
       answerLog(step, false, tries, { got, kind: 'master' });
       nextBtn(card);
@@ -2363,6 +2522,13 @@ function finish() {
     b.onclick = () => { sfx.tap(); openChest(null, finishAgain); };
     acts.appendChild(b);
   }
+  // 星星夠買東西就提醒去佈置房間（11/24 前 594 顆星都沒花，兌換券、衣櫥一次都沒用過）
+  const R = roomState(), cheap = FURN.filter(f => !R.owned.includes(f.id)).reduce((m, f) => Math.min(m, f.p), Infinity);
+  if (S.stars >= cheap) {
+    const b = h(`<button class="btn soft">有 ${S.stars} 顆星，去佈置房間 <span class="emo">🛋️</span></button>`);
+    b.onclick = () => { sfx.tap(); roomSel = null; roomView(); };
+    acts.appendChild(b);
+  }
   if (s.mode === 'story') {
     const b = h(`<button class="btn soft">故事屋 <span class="emo">📖</span></button>`);
     b.onclick = () => { sfx.tap(); storyView(); };
@@ -2584,7 +2750,7 @@ function home() {
       <button class="btn soft small" id="rescue"><span class="emo">🚑</span> 救援站${resc ? ` <b class="en">${resc}</b>` : ''}</button>
       <button class="btn soft small" id="dex"><span class="emo">🃏</span> 單字圖鑑 <b class="en">${golds}</b><span class="emo">✨</span></button>
       <button class="btn soft small" id="notes"><span class="emo">✏️</span> 造句本 <b class="en">${(S.notes || []).length}</b>${toFix().length ? ' <span class="emo">💡</span>' : ''}</button>
-      <button class="btn soft small" id="coupon"><span class="emo">🎟️</span> 媽媽兌換券</button>
+      <button class="btn soft small" id="room"><span class="emo">🛋️</span> 小羊的房間</button>
       ${REMOTE.message ? `<button class="btn soft small" id="letter"><span class="emo">💌</span> 媽媽的信</button>` : ''}
       <button class="btn soft small" id="book"><span class="emo">📒</span> 貼紙簿 ${S.badges.length}/${UNITS.length}</button>
     </div>
@@ -2606,7 +2772,7 @@ function home() {
   card.querySelector('#isle').onclick = () => { sfx.tap(); islandView(); };
   card.querySelector('#dex').onclick = () => { sfx.tap(); dexFilter = 'all'; dexView(); };
   card.querySelector('#notes').onclick = () => { sfx.tap(); notebookView(); };
-  card.querySelector('#coupon').onclick = () => { sfx.tap(); couponView(); };
+  card.querySelector('#room').onclick = () => { sfx.tap(); roomSel = null; roomView(); };
   card.querySelector('#sync').onclick = () => { sfx.tap(); syncView(); };
   const lt = card.querySelector('#letter');
   if (lt) lt.onclick = () => { sfx.tap(); showLetter(); };
@@ -2717,7 +2883,7 @@ function islandView() {
   const pets = FRIENDS.slice(0, Math.min(S.friends || 0, FRIENDS.length));
   const card = h(`<section class="card">
     <div class="island-box talkable">${islandSvg()}<button class="lamb-hit" aria-label="跟小羊說話"></button></div>
-    <div class="bubble talk" id="talk">點一下小羊，牠會跟你說英文喔！</div>
+    <div class="bubble talk" id="talk">點一下小羊，牠會跟你說英文喔！${pets.length ? '點小動物，牠會跳起來說自己的英文名字！' : ''}</div>
     ${buddy(days ? `小島已經蓋了 <b>${days}</b> 天！每天練滿 ${COUNT_MIN} 分鐘，小島就會慢慢長出新東西。` : `今天練滿 ${COUNT_MIN} 分鐘，小島就會開始長草喔！`, 'smile')}
     ${have.length ? `<div class="learned">${have.map(x => `<span><i class="emo">${x[1]}</i> ${x[2]}</span>`).join('')}</div>` : ''}
     ${soon.length ? `<div class="heard">接下來：${soon.map(x => `第 <b class="en">${x[0]}</b> 天 <span class="emo">❓</span>`).join('　')}</div>` : ''}
@@ -2736,6 +2902,15 @@ function islandView() {
     say(en);
     logEvent({ type: 'talk', got: en });
   };
+  // 點小動物：跳一下、唸牠的英文名字
+  card.querySelectorAll('.pet').forEach(g => g.addEventListener('click', () => {
+    const [, en, zh] = FRIEND_LIST[Number(g.dataset.i)];
+    g.classList.remove('jump'); void g.getBoundingClientRect(); g.classList.add('jump');
+    const t = card.querySelector('#talk');
+    t.innerHTML = `<span class="en">${esc(en)}</span>${esc(zh)}`;
+    t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop');
+    say(en);
+  }));
   $app.appendChild(card);
 }
 
@@ -2759,55 +2934,166 @@ function dexView() {
   $app.appendChild(card);
 }
 
-// 媽媽兌換券：用星星換，換到的券拿給媽媽看就能兌現
-function couponView() {
+/* ---------- 小羊的房間：用星星買家具佈置（2026-11-24 取代媽媽兌換券，使用者指定） ----------
+   家具拖一拖就能搬，點一下會唸英文名字（有一些是 Level 4 的字）；選起來可以放大、縮小、翻面、收起來。
+   位置存百分比（x、y 是房間寬、高的 %），換平板或轉橫向都一樣。y 越下面越前面。 */
+const ROOM_CATS = [['f', '家具'], ['t', '玩具'], ['p', '裝飾'], ['y', '好吃的'], ['wall', '壁紙'], ['floor', '地板']];
+// [id, emoji, 英文, 中文, 分類, 星星, 大小, 掛牆上]
+const FURN = [
+  ['bed', '🛏️', 'bed', '床', 'f', 40, 1.6], ['sofa', '🛋️', 'sofa', '沙發', 'f', 40, 1.6], ['chair', '🪑', 'chair', '椅子', 'f', 15, 1.1],
+  ['tv', '📺', 'TV', '電視', 'f', 45, 1.3], ['laptop', '💻', 'laptop', '筆電', 'f', 50, 1], ['lamp', '💡', 'lamp', '燈', 'f', 15, 0.8, 1],
+  ['clock', '🕰️', 'clock', '時鐘', 'f', 20, 0.9, 1], ['bath', '🛁', 'bathtub', '浴缸', 'f', 50, 1.5], ['shower', '🚿', 'shower', '蓮蓬頭', 'f', 30, 1, 1],
+  ['door', '🚪', 'door', '門', 'f', 30, 1.7], ['candle', '🕯️', 'candle', '蠟燭', 'f', 12, 0.7], ['books', '📚', 'books', '書', 'f', 15, 0.9],
+  ['painting', '🖼️', 'painting', '畫', 'f', 25, 1.1, 1],
+  ['teddy', '🧸', 'teddy bear', '泰迪熊', 't', 20, 1], ['soccer', '⚽', 'soccer ball', '足球', 't', 12, 0.8], ['basketball', '🏀', 'basketball', '籃球', 't', 12, 0.8],
+  ['guitar', '🎸', 'guitar', '吉他', 't', 35, 1.2], ['piano', '🎹', 'piano', '鋼琴', 't', 80, 1.4], ['drum', '🥁', 'drum', '鼓', 't', 30, 1],
+  ['chess', '♟️', 'chess', '西洋棋', 't', 20, 0.8], ['puzzle', '🧩', 'puzzle', '拼圖', 't', 15, 0.8], ['game', '🎮', 'video game', '電動', 't', 40, 0.9],
+  ['camera', '📷', 'camera', '相機', 't', 30, 0.8], ['skateboard', '🛹', 'skateboard', '滑板', 't', 25, 1], ['bicycle', '🚲', 'bicycle', '腳踏車', 't', 50, 1.4],
+  ['robot', '🤖', 'robot', '機器人', 't', 60, 1.1], ['dinosaur', '🦖', 'dinosaur', '恐龍', 't', 70, 1.3], ['telescope', '🔭', 'telescope', '望遠鏡', 't', 90, 1.2],
+  ['rocket', '🚀', 'rocket', '火箭', 't', 100, 1.3],
+  ['cactus', '🌵', 'cactus', '仙人掌', 'p', 10, 0.9], ['sunflower', '🌻', 'sunflower', '向日葵', 'p', 12, 1], ['tulip', '🌷', 'tulip', '鬱金香', 'p', 10, 0.8],
+  ['flowers', '💐', 'flowers', '花束', 'p', 15, 0.9], ['goldfish', '🐠', 'goldfish', '金魚', 'p', 25, 0.8], ['balloon', '🎈', 'balloon', '氣球', 'p', 10, 1, 1],
+  ['globe', '🌍', 'globe', '地球儀', 'p', 30, 0.9], ['star', '⭐', 'star', '星星', 'p', 15, 0.7, 1], ['moon', '🌙', 'moon', '月亮', 'p', 20, 0.8, 1],
+  ['rainbow', '🌈', 'rainbow', '彩虹', 'p', 40, 1.4, 1], ['trophy', '🏆', 'trophy', '獎盃', 'p', 60, 0.9],
+  ['cake', '🎂', 'cake', '蛋糕', 'y', 20, 0.9], ['doughnut', '🍩', 'doughnut', '甜甜圈', 'y', 10, 0.7], ['muffin', '🧁', 'muffin', '杯子蛋糕', 'y', 10, 0.7],
+  ['chocolate', '🍫', 'chocolate', '巧克力', 'y', 10, 0.7], ['sandwich', '🥪', 'sandwich', '三明治', 'y', 10, 0.7], ['pumpkin', '🎃', 'pumpkin', '南瓜', 'y', 15, 0.9],
+  ['strawberry', '🍓', 'strawberry', '草莓', 'y', 8, 0.6], ['cheese', '🧀', 'cheese', '起司', 'y', 8, 0.6], ['lunchbox', '🍱', 'lunchbox', '便當', 'y', 12, 0.8],
+  ['icecream', '🍦', 'ice cream', '冰淇淋', 'y', 10, 0.7],
+].map(([id, e, en, zh, c, p, s, hang]) => ({ id, e, en, zh, c, p, s, hang: !!hang }));
+// 壁紙、地板：第一個免費（樣式在 CSS 的 .wall-xx、.floor-xx）
+const ROOM_WALLS = [['w0', '奶油色', 0], ['w1', '粉紅色', 20], ['w2', '薄荷條紋', 30], ['w3', '星星夜空', 40], ['w4', '彩虹', 60]];
+const ROOM_FLOORS = [['f0', '木頭地板', 0], ['f1', '粉紅地毯', 20], ['f2', '草地', 30], ['f3', '格子地板', 30], ['f4', '雲朵地毯', 50]];
+const FURN_BY = Object.fromEntries(FURN.map(x => [x.id, x]));
+let roomSel = null, roomCat = 'f', roomMsg = '', roomBuy = null;
+const clampN = (v, a, b) => Math.min(b, Math.max(a, v));
+function roomState() {
+  const R = S.room = Object.assign({ owned: [], placed: [], wall: 'w0', floor: 'f0' }, S.room || {});
+  if (!R.lamb) R.lamb = { x: 20, y: 76 };
+  return R;
+}
+function roomView() {
+  const R = roomState();
   $app.innerHTML = '';
-  $app.appendChild(backBar('媽媽兌換券'));
-  const mine = S.coupons.slice(-5).reverse();
-  const md = s => { const d = new Date(s); return `${d.getMonth() + 1}/${d.getDate()}`; };
+  $app.appendChild(backBar('小羊的房間'));
   const card = h(`<section class="card">
-    ${buddy('存夠星星就能換！換好之後拿給媽媽看，就能兌現喔～', 'cheer')}
+    <div class="room wall-${R.wall} floor-${R.floor}" id="room"><div class="room-floor"></div></div>
+    <div class="row room-tools" id="tools"></div>
+    <div class="heard" id="msg">${roomMsg || (R.placed.length ? '拖一拖就能搬家具，點一下會唸英文喔！' : '用星星買家具，把小羊的房間佈置起來！')}</div>
     <div class="star-count"><span class="emo">⭐</span><b>${S.stars}</b></div>
-    <div class="coupons"></div>
-    ${mine.length ? `<div class="heard">換過的券：${mine.map(c => `${md(c.at)} <span class="emo">${esc(c.e || '🎟️')}</span> ${esc(c.name)}`).join('　')}</div>` : ''}
+    <div class="tabs">${ROOM_CATS.map(([k, n]) => `<button class="tab ${k === roomCat ? 'on' : ''}" data-k="${k}">${n}</button>`).join('')}</div>
+    <div class="items" id="shop"></div>
+    <div class="row" id="buy"></div>
   </section>`);
-  const box = card.querySelector('.coupons');
-  for (const c of coupons()) {
-    const short = S.stars < c.stars;
-    const b = h(`<button class="coupon ${short ? 'short' : ''}"><span class="emo">${esc(c.e || '🎟️')}</span>
-      <div><b>${esc(c.name)}</b><span class="price">⭐ ${c.stars}${short ? `　還差 ${c.stars - S.stars}` : ''}</span></div></button>`);
+  roomMsg = '';
+  const room = card.querySelector('#room'), msg = card.querySelector('#msg');
+  card.querySelectorAll('.tab').forEach(b => b.onclick = () => { sfx.tap(); roomCat = b.dataset.k; roomBuy = null; roomView(); });
+
+  // 房間裡的東西：小羊＋擺出來的家具
+  const lambEl = h(`<div class="rp lamb-rp" style="left:${R.lamb.x}%;top:${R.lamb.y}%;z-index:${Math.round(R.lamb.y)}"><span>${lamb('smile', S.wear)}</span></div>`);
+  room.appendChild(lambEl);
+  dragPiece(lambEl, room, () => R.lamb, (x, y) => { R.lamb.x = x; R.lamb.y = y; }, () => { hopEl(lambEl); say(pick(['I love my room!', 'Welcome to my room!', 'This is my home.'])); });
+  for (const p of R.placed) {
+    const f = FURN_BY[p.id]; if (!f) continue;
+    const el = h(`<div class="rp ${roomSel === p.k ? 'sel' : ''}" data-k="${p.k}" style="left:${p.x}%;top:${p.y}%;z-index:${Math.round(p.y)};--b:${f.s};--s:${p.s};--f:${p.f ? -1 : 1}"><span>${f.e}</span></div>`);
+    room.appendChild(el);
+    dragPiece(el, room, () => p, (x, y) => { p.x = x; p.y = y; }, () => {
+      roomSel = p.k; room.querySelectorAll('.rp').forEach(x => x.classList.toggle('sel', x === el));
+      hopEl(el); say(f.en);
+      msg.innerHTML = `<span class="en">${esc(f.en)}</span>　${esc(f.zh)}`;
+      tools();
+    }, () => { roomSel = p.k; room.querySelectorAll('.rp').forEach(x => x.classList.toggle('sel', x === el)); tools(); });
+  }
+
+  // 選起來的家具：放大、縮小、翻面、收起來
+  function tools() {
+    const box = card.querySelector('#tools'); box.innerHTML = '';
+    const p = R.placed.find(x => x.k === roomSel); if (!p) return;
+    const el = room.querySelector(`[data-k="${p.k}"]`);
+    const btn = (t, fn) => { const b = h(`<button class="btn soft small">${t}</button>`); b.onclick = () => { sfx.tap(); fn(); save(); }; box.appendChild(b); };
+    btn('<span class="emo">➕</span> 放大', () => { p.s = Math.min(2, +(p.s * 1.2).toFixed(2)); el.style.setProperty('--s', p.s); });
+    btn('<span class="emo">➖</span> 縮小', () => { p.s = Math.max(0.5, +(p.s / 1.2).toFixed(2)); el.style.setProperty('--s', p.s); });
+    btn('<span class="emo">↔️</span> 翻面', () => { p.f = !p.f; el.style.setProperty('--f', p.f ? -1 : 1); });
+    btn('<span class="emo">📦</span> 收起來', () => { R.placed = R.placed.filter(x => x !== p); roomSel = null; roomMsg = `${FURN_BY[p.id].zh}收起來了，想擺的時候在下面點它～`; roomView(); });
+  }
+  tools();
+
+  // 下面的商店：家具類、壁紙、地板
+  const shop = card.querySelector('#shop'), buyRow = card.querySelector('#buy');
+  const buyBtn = (name, price, done) => {
+    const b = h(`<button class="btn butter">買下${esc(name)} <span class="emo">⭐</span> ${price}</button>`);
     b.onclick = () => {
-      if (short) { wiggle(b); sfx.soft(); return; }
-      sfx.tap(); redeem(c);
+      if (S.stars < price) return;
+      S.stars -= price; done(); roomBuy = null; save(); sfx.fanfare();
+      roomMsg = `買到了 <b>${esc(name)}</b>！`;
+      roomView(); burstAt(document.getElementById('room'), ['⭐', '💖', '✨']);
     };
-    box.appendChild(b);
+    buyRow.appendChild(b);
+  };
+  if (roomCat === 'wall' || roomCat === 'floor') {
+    const isWall = roomCat === 'wall', list = isWall ? ROOM_WALLS : ROOM_FLOORS;
+    for (const [id, name, price] of list) {
+      const own = !price || R.owned.includes(id), on = (isWall ? R.wall : R.floor) === id;
+      const sw = isWall ? `<span class="swatch wall-${id}"></span>` : `<span class="swatch floor-${id}"><span class="room-floor"></span></span>`;
+      const b = h(`<button class="item ${on ? 'worn' : ''} ${roomBuy === id ? 'trying' : ''}">${sw}<b>${name}</b><span class="state">${on ? '用著 ✓' : own ? '換上' : `⭐ ${price}`}</span></button>`);
+      b.onclick = () => {
+        sfx.tap();
+        if (own) { R[isWall ? 'wall' : 'floor'] = id; roomBuy = null; save(); return roomView(); }
+        roomBuy = id;
+        roomMsg = S.stars >= price ? `喜歡就買下來～` : `還差 <b>${price - S.stars}</b> 顆星，多練習就買得到！`;
+        roomView();
+      };
+      shop.appendChild(b);
+    }
+    const t = list.find(x => x[0] === roomBuy);
+    if (t && S.stars >= t[2]) buyBtn(t[1], t[2], () => { R.owned.push(t[0]); R[isWall ? 'wall' : 'floor'] = t[0]; logEvent({ type: 'room', got: t[0], tries: t[2] }); });
+  } else {
+    for (const f of FURN.filter(x => x.c === roomCat)) {
+      const own = R.owned.includes(f.id), p = R.placed.find(x => x.id === f.id);
+      const b = h(`<button class="item ${p ? 'worn' : ''} ${roomBuy === f.id ? 'trying' : ''}">
+        <span class="ie">${f.e}</span><b>${esc(f.zh)}</b><span class="en">${esc(f.en)}</span><span class="state">${p ? '擺著 ✓' : own ? '擺出來' : `⭐ ${f.p}`}</span></button>`);
+      b.onclick = () => {
+        sfx.tap(); say(f.en);
+        if (p) { roomSel = p.k; roomBuy = null; return roomView(); }
+        if (own) { placeFurn(f); return roomView(); }
+        roomBuy = f.id;
+        roomMsg = S.stars >= f.p ? `<span class="en">${esc(f.en)}</span>　${esc(f.zh)}，喜歡就買下來～` : `還差 <b>${f.p - S.stars}</b> 顆星，多練習就買得到！`;
+        roomView();
+      };
+      shop.appendChild(b);
+    }
+    const f = FURN_BY[roomBuy];
+    if (f && f.c === roomCat && S.stars >= f.p) buyBtn(f.zh, f.p, () => { R.owned.push(f.id); placeFurn(f); logEvent({ type: 'room', got: f.id, tries: f.p }); });
   }
   $app.appendChild(card);
 }
-function redeem(c) {
-  const m = h(`<div class="overlay"><section class="card">
-    ${buddy(`要用 <b>${c.stars}</b> 顆星星，換「<b>${esc(c.name)}</b>」嗎？`, 'think')}
-    <div class="row"><button class="btn butter" id="yes">換！<span class="emo">${esc(c.e || '🎟️')}</span></button><button class="btn soft small" id="no">再想想</button></div>
-  </section></div>`);
-  document.body.appendChild(m);
-  m.querySelector('#no').onclick = () => { sfx.tap(); m.remove(); };
-  m.querySelector('#yes').onclick = () => {
-    if (S.stars < c.stars) { m.remove(); return; }
-    S.stars -= c.stars;
-    const at = new Date().toISOString();
-    S.coupons.push({ name: c.name, e: c.e, stars: c.stars, at }); save();
-    logEvent({ type: 'redeem', got: c.name, tries: c.stars }); flush();
-    sfx.fanfare();
-    const d = new Date(at);
-    m.innerHTML = '';
-    const t = h(`<section class="card"><div class="ticket">
-      <span class="emo">${esc(c.e || '🎟️')}</span><h2>${esc(c.name)}</h2>
-      <div class="heard">${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}　${NAME}用 ⭐${c.stars} 換到的</div>
-    </div>${buddy('拿給媽媽看，就能兌現喔！', 'cheer')}<button class="btn" id="ok">好！</button></section>`);
-    t.querySelector('#ok').onclick = () => { sfx.tap(); m.remove(); couponView(); };
-    m.appendChild(t);
-    burst(innerWidth / 2, innerHeight / 3, ['🎉', '⭐', '💖', '🎟️']);
-  };
+// 擺出來：掛牆上的放上面，其他放地板上；稍微錯開，不要疊在一起
+function placeFurn(f) {
+  const R = roomState(), k = uid();
+  R.placed.push({ k, id: f.id, x: clampN(50 + (rnd(41) - 20), 8, 92), y: f.hang ? 22 + rnd(16) : 66 + rnd(20), s: 1, f: false });
+  roomSel = k; save();
+}
+function hopEl(el) { const s = el.firstElementChild; s.classList.remove('hop'); void s.offsetWidth; s.classList.add('hop'); }
+// 拖曳：手指移超過 8px 才算拖，不然算點一下（onTap）；按下就選起來（onPick）
+function dragPiece(el, room, get, set, onTap, onPick) {
+  el.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    try { el.setPointerCapture(ev.pointerId); } catch (e) {}
+    const r = room.getBoundingClientRect(), sx = ev.clientX, sy = ev.clientY, p0 = Object.assign({}, get());
+    let moved = false;
+    const mv = e => {
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!moved && Math.hypot(dx, dy) < 8) return;
+      if (!moved) { moved = true; el.classList.add('drag'); if (onPick) onPick(); }
+      const x = clampN(p0.x + dx / r.width * 100, 4, 96), y = clampN(p0.y + dy / r.height * 100, 6, 96);
+      set(x, y); el.style.left = x + '%'; el.style.top = y + '%'; el.style.zIndex = Math.round(y);
+    };
+    const up = () => {
+      el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+      el.classList.remove('drag');
+      if (moved) save(); else onTap();
+    };
+    el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  });
 }
 
 // 媽媽的信：試算表 message 分頁 A2 的內容；改了內容，陽寶下次打開就會收到
